@@ -17,7 +17,7 @@ public class MaxClientConfig {
     ) {
         return WebClient.builder()
                 .baseUrl(baseUrl)
-                .defaultHeader("Authorization", token) // важно: без Bearer
+                .defaultHeader("Authorization", token)
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.create()))
                 .filter(logRequest())
                 .filter(logResponse())
