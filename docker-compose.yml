@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    container_name: smarttodo-app
+    read_only: true
+    user: "1000:1000"
+    volumes:
+      - ./secrets:/etc/smarttodo/secrets:ro   # файлы-секреты
+    tmpfs:
+      - /tmp
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
