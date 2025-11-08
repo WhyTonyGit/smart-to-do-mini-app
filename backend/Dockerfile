@@ -7,7 +7,6 @@ RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
 
-RUN useradd -r -u 1000 -g users appuser
 WORKDIR /app
 RUN mkdir -p /app/logs /tmp && chown -R 1000:users /app /tmp
 
