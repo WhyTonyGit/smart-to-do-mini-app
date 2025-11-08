@@ -11,7 +11,7 @@ import java.time.Instant;
 @Table(name = "users")
 public class UserEntity {
     @Id
-    private Long uesrId;
+    private Long userId;
 
     @Column(name = "chat_id")
     private Long chatId;
