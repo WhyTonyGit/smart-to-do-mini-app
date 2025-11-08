@@ -1,7 +1,7 @@
 package com.smarttodo.app.client;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,6 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class MaxApi {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
@@ -23,6 +22,10 @@ public class MaxApi {
             .filter(MaxApi::isTransient);
 
     private final WebClient client; // собран в MaxConfig: baseUrl + Authorization
+
+    public MaxApi(@Qualifier("maxClient") WebClient client) {
+        this.client = client;
+    }
 
     /** Отправка простого текста в чат (MAX: POST /messages?chat_id=...) */
     public void sendText(long chatId, String text) {
