@@ -48,6 +48,7 @@ public class UpdateRouter {
         // Пример 1: команды
         if (u.isTextCommand("/start")) {
             max.sendStartKeyboard(u.chatId());
+            max.sendOpenLink(u.chatId(), "https://dev.max.ru/docs/webapps/bridge", "press");
             return;
         }
 

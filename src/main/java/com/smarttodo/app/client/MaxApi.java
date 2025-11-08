@@ -74,6 +74,33 @@ public class MaxApi {
                 .block();
     }
 
+    public void sendOpenLink(long chatId, String url, String title) {
+        var body = Map.of(
+                "text", "Открой мини-приложение",
+                "attachments", java.util.List.of(
+                        Map.of(
+                                "type", "inline_keyboard",
+                                "payload", Map.of(
+                                        "buttons", java.util.List.of(
+                                                java.util.List.of( // один ряд
+                                                        Map.of(
+                                                                "type", "link",
+                                                                "text", title != null ? title : "Открыть",
+                                                                "url", url
+                                                        )
+                                                )
+                                        )
+                                )
+                        )
+                )
+        );
+
+        postMessage(chatId, body)
+                .timeout(TIMEOUT)
+                .retryWhen(RETRY_5XX_OR_NETWORK)
+                .block();
+    }
+
     /** MAX принимает получателя только в query; в теле — контент (NewMessageBody). */
     private Mono<ResponseEntity<Void>> postMessage(long chatId, Object body) {
         return client.post()
