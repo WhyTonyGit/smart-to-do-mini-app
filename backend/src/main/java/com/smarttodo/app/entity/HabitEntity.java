@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -12,16 +15,17 @@ import java.time.Instant;
 @EqualsAndHashCode(of = "id")
 @ToString(of = {"id", "title", "status"})
 @Entity
-@Table(name = "tasks")
-public class TaskEntity {
+@Table(name = "habits")
+public class HabitEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
+
     @JoinColumn(name = "user_id", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_task_user"))
+            foreignKey = @ForeignKey(name = "fk_habit_user"))
     @NonNull
     private final UserEntity user;
 
@@ -34,7 +38,7 @@ public class TaskEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
-    private TaskStatus status = TaskStatus.NEW;
+    private HabitStatus status = HabitStatus.ARCHIVED;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority", nullable = false, length = 32)
@@ -43,8 +47,11 @@ public class TaskEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(name = "completed_at")
-    private Instant completedAt;
+    @Column(name = "goal_date")
+    private LocalDate goalDate;
+
+    @OneToMany(mappedBy = "habit", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HabitCheckinEntity> checkins = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

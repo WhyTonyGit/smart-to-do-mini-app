@@ -2,23 +2,44 @@ package com.smarttodo.app.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
-@NoArgsConstructor
+@RequiredArgsConstructor
+@NoArgsConstructor(force = true)
+@EqualsAndHashCode(of = "id")
+@ToString(of = {"id", "chatId", "displayName"})
 @Entity
 @Table(name = "users")
 public class UserEntity {
     @Id
-    private Long userId;
+    //Сюда кладем userId, так как он уникален
+    private Long id;
 
-    @Column(name = "chat_id")
-    private Long chatId;
+    @Column(name = "chat_id", nullable = false, unique = true, updatable = false)
+    @NonNull
+    private final Long chatId;
 
     @Column(name = "display_name")
     private String displayName;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt = Instant.now();
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TaskEntity> tasks = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HabitEntity> habits = new ArrayList<>();
+
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = Instant.now();
+    }
 }
