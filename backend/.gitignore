@@ -33,5 +33,5 @@ build/
 .vscode/
 
 # Local secrets (не коммитим)
-secrets/
-secrets/**
+../secrets/
+../secrets/**
