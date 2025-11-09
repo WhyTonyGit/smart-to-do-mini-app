@@ -3,6 +3,7 @@ package com.smarttodo.app.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smarttodo.app.dto.Update;
+import com.smarttodo.app.entity.TaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -52,7 +53,8 @@ public class UpdateRouter {
             return;
         }
 
-        if (u.isCallback("start")) {
+        if (u.isCallback("completed")) {
+            service.markTaskAsCompleted(chatId, taskId);
             max.sendText(u.chatId(), "Пока в разработке.");
             return;
         }
