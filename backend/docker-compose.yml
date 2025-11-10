@@ -17,6 +17,25 @@ services:
       retries: 10
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: smarttodo-ollama
+    restart: unless-stopped
+#    ports:
+#      - "11434:11434" # опционально: открыть наружу; для чистого внутреннего доступа можно убрать
+    volumes:
+      - ollama:/root/.ollama
+      - ./models:/models:ro
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    healthcheck:
+      test: ["CMD-SHELL", "command -v curl >/dev/null 2>&1 && curl -f http://localhost:11434/api/tags 
+      || (apk add --no-cache curl && curl -f http://localhost:11434/api/tags)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
   app:
     build: .
     container_name: smarttodo-app
@@ -25,21 +44,24 @@ services:
     env_file:
       - ./secrets-max.env
     volumes:
-      - ./secrets-db:/etc/smarttodo/secrets-db:ro # секреты БД
+      - ./secrets-db:/etc/smarttodo/secrets-db:ro
     tmpfs:
       - /tmp
     ports:
       - "8080:8080"
     environment:
-      - MAX_API_BASE_URL
-      - MAX_API_TOKEN
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/smarttodo
       - SPRING_DATASOURCE_USERNAME=smarttodo
       - SPRING_DATASOURCE_PASSWORD=smarttodo
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - REMINDER_MODEL=reminder-title
     depends_on:
       db:
         condition: service_healthy
+      ollama:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
   pgdata:
+  ollama:
