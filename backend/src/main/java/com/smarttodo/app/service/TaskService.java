@@ -2,11 +2,13 @@ package com.smarttodo.app.service;
 
 import com.smarttodo.app.dto.TaskDto;
 import com.smarttodo.app.entity.TaskStatus;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Service
 public class TaskService {
 
     TaskDto createTask(Long userId, TaskDto createTaskDto) {

@@ -3,9 +3,11 @@ package com.smarttodo.app.service;
 import com.smarttodo.app.dto.HabitDto;
 import com.smarttodo.app.entity.HabitInterval;
 import com.smarttodo.app.entity.HabitStatus;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Service
 public class HabitService {
 
     HabitDto createHabit(Long userId, HabitDto createHabitDto) {
@@ -20,9 +22,6 @@ public class HabitService {
         return;
     };
 
-    void markHabitAsArchived(Long habitId) {
-        return;
-    };
 
     List<HabitDto> getAllHabits(Long userId) {
         return null;

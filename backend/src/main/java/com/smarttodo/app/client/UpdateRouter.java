@@ -4,21 +4,24 @@ package com.smarttodo.app.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smarttodo.app.dto.Update;
 import com.smarttodo.app.entity.TaskStatus;
+import com.smarttodo.app.service.HabitService;
+import com.smarttodo.app.service.TaskService;
+import com.smarttodo.app.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateRouter {
     private static final Logger log = LoggerFactory.getLogger(UpdateRouter.class);
 
     private final ObjectMapper om;
     private final MaxApi max;
-
-    public UpdateRouter(ObjectMapper om, MaxApi max) {
-        this.om = om;
-        this.max = max;
-    }
+    private final UserService userService;
+    private final TaskService taskService;
+    private final HabitService habitService;
 
     /** Главная точка входа: вызывается контроллером вебхука */
     public void dispatch(String rawJson) {
@@ -49,27 +52,25 @@ public class UpdateRouter {
         // Пример 1: команды
         if (u.isTextCommand("/start")) {
             max.sendStartKeyboard(u.chatId());
-            max.sendOpenLink(u.chatId(), "https://dev.max.ru/docs/webapps/bridge", "press");
             return;
         }
 
-        if (u.isCallback("completed")) {
-            service.markTaskAsCompleted(chatId, taskId);
+        if (u.isCallback("tasks-handler")) {
             max.sendText(u.chatId(), "Пока в разработке.");
             return;
         }
-
-        // Пример 2: эхо любого текста
-        if (u.isType("message_created") && u.getMessage() != null) {
-            var body = u.getMessage().getBody();
-            var text = body != null ? body.getText() : null;
-            if (text != null && !text.isBlank()) {
-                max.sendText(u.chatId(), "Вы сказали: " + text);
-                return;
-            }
+        if (u.isCallback("habit-handler")) {
+            max.sendText(u.chatId(), "Пока в разработке.");
+            return;
         }
-
-        log.info("Unhandled update_type={} eventId={}", u.getUpdateType(), u.getEventId());
+        if (u.isCallback("notification-handler")) {
+            max.sendText(u.chatId(), "Пока в разработке.");
+            return;
+        }
+        if (u.isCallback("tasks-create-new")) {
+            max.sendText(u.chatId(), "Пока в разработке.");
+            return;
+        }
     }
 
     private String truncate(String s) {

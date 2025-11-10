@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.time.Duration;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -51,24 +51,74 @@ public class MaxApi {
                         • Замеряю «часы активности» — когда ты реально делаешь дела
                         • Запускаю трекеры привычек и мотивирую не срываться
                         
-                        Готов начать? Нажми «Погнали» — создадим первую задачу и настроим напоминания.
+                        Готов начать?
                         """,
-                "attachments", java.util.List.of(
+                "attachments", List.of(
                         Map.of(
                                 "type", "inline_keyboard",
                                 "payload", Map.of(
-                                        "buttons", java.util.List.of(
-                                                java.util.List.of(
+                                        "buttons", List.of(
+                                                List.of(
                                                         Map.of(
                                                                 "type", "callback",
-                                                                "text", "Погнали",
-                                                                "payload", "start"
+                                                                "text", "✅Задачи",
+                                                                "payload", "tasks-handler"
+                                                        ),
+                                                        Map.of(
+                                                                "type", "callback",
+                                                                "text", "🗓️Привычки",
+                                                                "payload", "habit-handler"
+                                                        ),
+                                                        Map.of(
+                                                                "type", "callback",
+                                                                "text", "⏰Напоминания",
+                                                                "payload", "notification-handler"
                                                         )
                                                 )
                                         )
                                 )
                         )
                 )
+        );
+
+        postMessage(chatId, body)             // твой внутренний метод
+                .timeout(TIMEOUT)
+                .retryWhen(RETRY_5XX_OR_NETWORK)
+                .block();
+    }
+
+    public void sendTaskKeyboard(long chatId) {
+        var body = Map.of(
+                "text", """
+                        📝**Меню задач**
+                        """,
+                "attachments", List.of(
+                        Map.of(
+                                "type", "inline_keyboard",
+                                "payload", Map.of(
+                                        "buttons", List.of(
+                                                List.of(
+                                                        Map.of(
+                                                                "type", "callback",
+                                                                "text", "Задачи на сегодня",
+                                                                "payload", "tasks-get-today"
+                                                        ),
+                                                        Map.of(
+                                                                "type", "callback",
+                                                                "text", "Задачи на неделю",
+                                                                "payload", "tasks-get-week"
+                                                        ),
+                                                        Map.of(
+                                                                "type", "callback",
+                                                                "text", "Создать задачу",
+                                                                "payload", "tasks-create-new"
+                                                        )
+                                                )
+                                        )
+                                )
+                        )
+                ),
+                "format", "markdown"
         );
 
         postMessage(chatId, body)             // твой внутренний метод
