@@ -32,7 +32,7 @@ services:
       - "8080:8080"
     environment:
       - MAX_API_BASE_URL=https://platform-api.max.ru
-      - MAX_API_TOKEN=f9LHodD0cOJ2NutMPfmhZCl_ePaGEilmFkaB_j9d0sCdBoZXh0YS1aWRVT_b9PyszhMDM9D_x0qNA688lbJX
+      - MAX_API_TOKEN= #токен бота
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/smarttodo
       - SPRING_DATASOURCE_USERNAME=smarttodo
       - SPRING_DATASOURCE_PASSWORD=smarttodo
