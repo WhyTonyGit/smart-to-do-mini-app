@@ -54,7 +54,7 @@ public class UpdateRouter {
         }
 
         if (u.isCallback("completed")) {
-            service.markTaskAsCompleted(chatId, taskId);
+//          service.markTaskAsCompleted(chatId, taskId);
             max.sendText(u.chatId(), "Пока в разработке.");
             return;
         }
