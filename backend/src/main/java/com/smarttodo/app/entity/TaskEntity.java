@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -31,6 +32,9 @@ public class TaskEntity {
 
     @Column(name = "description", columnDefinition = "text")
     private String description;
+
+    @Column(name = "deadline")
+    private LocalDateTime deadline;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)

@@ -1,9 +1,10 @@
-package com.smarttodo.app.client;
+package com.smarttodo.app.bot;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smarttodo.app.client.MaxApi;
 import com.smarttodo.app.dto.Update;
-import com.smarttodo.app.entity.TaskStatus;
 import com.smarttodo.app.service.HabitService;
 import com.smarttodo.app.service.TaskService;
 import com.smarttodo.app.service.UserService;
@@ -48,28 +49,41 @@ public class UpdateRouter {
         }
     }
 
-    private void route(Update u) {
+    private void route(Update u) throws JsonProcessingException {
+        log.info("ROUTE: {}", om.writeValueAsString(u));
+        log.info("Update: {}", u.toString());
+        log.info("Is text command: {}", u.isTextCommand("/start"));
+
         // Пример 1: команды
         if (u.isTextCommand("/start")) {
+            log.info("ROUTE: start");
             max.sendStartKeyboard(u.chatId());
             return;
         }
 
-        if (u.isCallback("tasks-handler")) {
-            max.sendText(u.chatId(), "Пока в разработке.");
-            return;
-        }
-        if (u.isCallback("habit-handler")) {
-            max.sendText(u.chatId(), "Пока в разработке.");
-            return;
-        }
-        if (u.isCallback("notification-handler")) {
-            max.sendText(u.chatId(), "Пока в разработке.");
-            return;
-        }
-        if (u.isCallback("tasks-create-new")) {
-            max.sendText(u.chatId(), "Пока в разработке.");
-            return;
+        if (u.isCallback()) {
+            switch(u.getPayload()) {
+                case "tasks-handler" -> {
+                    max.sendTaskKeyboard(u.chatId());
+                    break;
+                }
+                case "habit-handler" -> {
+                    max.sendText(u.chatId(), "Пока в разработке.");
+                    break;
+                }
+                case "notification-handler" -> {
+                    max.sendText(u.chatId(), "Пока в разработке..");
+                    break;
+                }
+                case "tasks-create-new" -> {
+                    max.sendText(u.chatId(), "Пока в разработке...");
+                    break;
+                }
+                default -> {
+                    max.sendText(u.chatId(), "Произошла ошибка на сервере, приносим свои извинения.");
+                    break;
+                }
+            }
         }
     }
 

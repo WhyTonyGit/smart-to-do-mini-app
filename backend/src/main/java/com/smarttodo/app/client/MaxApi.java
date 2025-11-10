@@ -1,5 +1,6 @@
 package com.smarttodo.app.client;
 
+import com.smarttodo.app.bot.InlineKeyboardBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -27,7 +28,6 @@ public class MaxApi {
         this.client = client;
     }
 
-    /** Отправка простого текста в чат (MAX: POST /messages?chat_id=...) */
     public void sendText(long chatId, String text) {
         if (chatId <= 0) throw new IllegalArgumentException("chatId must be > 0");
         if (text == null || text.isBlank()) return; // молча игнорим пустяки
@@ -41,45 +41,22 @@ public class MaxApi {
     }
 
     public void sendStartKeyboard(long chatId) {
-        var body = Map.of(
-                "text", """
+        var body = InlineKeyboardBuilder.create()
+                .text("""
                         Привет! Я твой помощник по самоорганизации. Помогу планировать день, вести задачи, отслеживать часы активности и формировать полезные привычки.
-                        
+
                         Что я делаю:
                         • Быстро добавляю и напоминаю о задачах
                         • Следую за прогрессом и показываю статистику выполнения
                         • Замеряю «часы активности» — когда ты реально делаешь дела
                         • Запускаю трекеры привычек и мотивирую не срываться
-                        
-                        Готов начать?
-                        """,
-                "attachments", List.of(
-                        Map.of(
-                                "type", "inline_keyboard",
-                                "payload", Map.of(
-                                        "buttons", List.of(
-                                                List.of(
-                                                        Map.of(
-                                                                "type", "callback",
-                                                                "text", "✅Задачи",
-                                                                "payload", "tasks-handler"
-                                                        ),
-                                                        Map.of(
-                                                                "type", "callback",
-                                                                "text", "🗓️Привычки",
-                                                                "payload", "habit-handler"
-                                                        ),
-                                                        Map.of(
-                                                                "type", "callback",
-                                                                "text", "⏰Напоминания",
-                                                                "payload", "notification-handler"
-                                                        )
-                                                )
-                                        )
-                                )
-                        )
+                        """
                 )
-        );
+                .format("markdown")
+                .addCallbackButton("✅Задачи", "tasks-handler")
+                .addCallbackButton("🗓️Привычки", "habit-handler")
+                .addCallbackButton("⏰Напоминания", "notification-handler")
+                .build();
 
         postMessage(chatId, body)             // твой внутренний метод
                 .timeout(TIMEOUT)
@@ -88,65 +65,15 @@ public class MaxApi {
     }
 
     public void sendTaskKeyboard(long chatId) {
-        var body = Map.of(
-                "text", """
-                        📝**Меню задач**
-                        """,
-                "attachments", List.of(
-                        Map.of(
-                                "type", "inline_keyboard",
-                                "payload", Map.of(
-                                        "buttons", List.of(
-                                                List.of(
-                                                        Map.of(
-                                                                "type", "callback",
-                                                                "text", "Задачи на сегодня",
-                                                                "payload", "tasks-get-today"
-                                                        ),
-                                                        Map.of(
-                                                                "type", "callback",
-                                                                "text", "Задачи на неделю",
-                                                                "payload", "tasks-get-week"
-                                                        ),
-                                                        Map.of(
-                                                                "type", "callback",
-                                                                "text", "Создать задачу",
-                                                                "payload", "tasks-create-new"
-                                                        )
-                                                )
-                                        )
-                                )
-                        )
-                ),
-                "format", "markdown"
-        );
-
-        postMessage(chatId, body)             // твой внутренний метод
-                .timeout(TIMEOUT)
-                .retryWhen(RETRY_5XX_OR_NETWORK)
-                .block();
-    }
-
-    public void sendOpenLink(long chatId, String url, String title) {
-        var body = Map.of(
-                "text", "Открой мини-приложение",
-                "attachments", java.util.List.of(
-                        Map.of(
-                                "type", "inline_keyboard",
-                                "payload", Map.of(
-                                        "buttons", java.util.List.of(
-                                                java.util.List.of( // один ряд
-                                                        Map.of(
-                                                                "type", "link",
-                                                                "text", title != null ? title : "Открыть",
-                                                                "url", url
-                                                        )
-                                                )
-                                        )
-                                )
-                        )
-                )
-        );
+        var body = InlineKeyboardBuilder.create()
+                .text("""
+              📝**Меню задач**
+              """)
+                .format("markdown")
+                .addCallbackButton("Задачи на сегодня", "tasks-get-today")
+                .addCallbackButton("Задачи на неделю", "tasks-get-week")
+                .addCallbackButton("Создать задачу", "tasks-create-new")
+                .build();
 
         postMessage(chatId, body)
                 .timeout(TIMEOUT)
@@ -154,7 +81,6 @@ public class MaxApi {
                 .block();
     }
 
-    /** MAX принимает получателя только в query; в теле — контент (NewMessageBody). */
     private Mono<ResponseEntity<Void>> postMessage(long chatId, Object body) {
         return client.post()
                 .uri(b -> b.path("/messages").queryParam("chat_id", chatId).build())
