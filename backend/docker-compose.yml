@@ -21,46 +21,72 @@ services:
     image: ollama/ollama:latest
     container_name: smarttodo-ollama
     restart: unless-stopped
-#    ports:
-#      - "11434:11434" # опционально: открыть наружу; для чистого внутреннего доступа можно убрать
+    init: true
+    ports:
+      - "11434:11434"
     volumes:
       - ollama:/root/.ollama
-      - ./models:/models:ro
     environment:
       - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_CONTEXT_LENGTH=4096
     healthcheck:
-      test: ["CMD-SHELL", "command -v curl >/dev/null 2>&1 && curl -f http://localhost:11434/api/tags 
-      || (apk add --no-cache curl && curl -f http://localhost:11434/api/tags)"]
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 30
       start_period: 30s
+    command: ["serve"]
 
-  app:
-    build: .
-    container_name: smarttodo-app
-    read_only: true
-    user: "1000:1000"
-    env_file:
-      - ./secrets-max.env
-    volumes:
-      - ./secrets-db:/etc/smarttodo/secrets-db:ro
-    tmpfs:
-      - /tmp
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/smarttodo
-      - SPRING_DATASOURCE_USERNAME=smarttodo
-      - SPRING_DATASOURCE_PASSWORD=smarttodo
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - REMINDER_MODEL=reminder-title
+  # One-shot контейнер который качает модель и выходит
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: smarttodo-ollama-pull
     depends_on:
-      db:
-        condition: service_healthy
       ollama:
-        condition: service_started
-    restart: unless-stopped
+        condition: service_healthy
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434   # ← важна схема http://
+    entrypoint: [ "/bin/sh","-lc" ]
+    command:
+      - |
+        set -e
+        echo "Using OLLAMA_HOST=$$OLLAMA_HOST"
+
+        # ждём готовности API
+        i=1
+        while [ "$$i" -le 120 ]; do
+          if ollama list >/dev/null 2>&1; then
+            break
+          fi
+          echo "Waiting for Ollama API... ($$i)"
+          i=$$((i+1))
+          sleep 1
+        done
+
+        # если модель уже есть — выходим
+        if ollama list | grep -q '^deepseek-r1:8b'; then
+          echo 'Model deepseek-r1:8b already present'
+          exit 0
+        fi
+
+        echo 'Pulling deepseek-r1:8b...'
+        n=0
+        until [ "$$n" -ge 3 ]; do
+          if OLLAMA_DEBUG=info ollama pull deepseek-r1:8b; then
+            echo 'Pull complete'
+            exit 0
+          fi
+          n=$$((n+1))
+          echo "Pull failed (attempt $$n), retrying in 5s..."
+          sleep 5
+        done
+
+        echo 'Pull failed after 3 attempts'
+        exit 1
+    restart: "no"
+
 
 volumes:
   pgdata:
