@@ -27,8 +27,7 @@ services:
     volumes:
       - ollama:/root/.ollama
     environment:
-      - OLLAMA_KEEP_ALIVE=24h
-      - OLLAMA_CONTEXT_LENGTH=4096
+      - OLLAMA_KEEP_ALIVE=30m
     healthcheck:
       test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
       interval: 10s
@@ -47,14 +46,13 @@ services:
     volumes:
       - ollama:/root/.ollama
     environment:
-      - OLLAMA_HOST=http://ollama:11434   # ← важна схема http://
+      - OLLAMA_HOST=http://ollama:11434
     entrypoint: [ "/bin/sh","-lc" ]
     command:
       - |
         set -e
         echo "Using OLLAMA_HOST=$$OLLAMA_HOST"
 
-        # ждём готовности API
         i=1
         while [ "$$i" -le 120 ]; do
           if ollama list >/dev/null 2>&1; then
@@ -66,15 +64,15 @@ services:
         done
 
         # если модель уже есть — выходим
-        if ollama list | grep -q '^deepseek-r1:8b'; then
-          echo 'Model deepseek-r1:8b already present'
+        if ollama list | grep -q '^qwen2.5:0.5b'; then
+          echo 'Model qwen2.5:0.5b already present'
           exit 0
         fi
 
-        echo 'Pulling deepseek-r1:8b...'
+        echo 'Pulling qwen2.5:0.5b...'
         n=0
         until [ "$$n" -ge 3 ]; do
-          if OLLAMA_DEBUG=info ollama pull deepseek-r1:8b; then
+          if OLLAMA_DEBUG=info ollama pull qwen2.5:0.5b; then
             echo 'Pull complete'
             exit 0
           fi
@@ -87,6 +85,33 @@ services:
         exit 1
     restart: "no"
 
+  app:
+    container_name: smarttodo-app
+    build: .
+    read_only: true
+    user: "1000:1000"
+    env_file:
+      - ./secrets-max.env
+    volumes:
+      - ./secrets-db:/etc/smarttodo/secrets-db:ro
+    tmpfs:
+      - /tmp
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/smarttodo
+      SPRING_DATASOURCE_USERNAME: smarttodo
+      SPRING_DATASOURCE_PASSWORD: smarttodo
+      OLLAMA_API_BASE_URL: http://ollama:11434
+      OLLAMA_API_MODEL: qwen2.5:0.5b
+      OLLAMA_API_TIMEOUT_SECONDS: 120
+      REMINDER_MODEL: reminder-title
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    restart: unless-stopped
 
 volumes:
   pgdata:

@@ -1,35 +1,27 @@
 package com.smarttodo.app.client;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smarttodo.app.dto.Update;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.smarttodo.app.llm.NlpService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class UpdateRouter {
-    private static final Logger log = LoggerFactory.getLogger(UpdateRouter.class);
 
     private final ObjectMapper om;
     private final MaxApi max;
+    private final NlpService nlp;
 
-    public UpdateRouter(ObjectMapper om, MaxApi max) {
-        this.om = om;
-        this.max = max;
-    }
-
-    /** Главная точка входа: вызывается контроллером вебхука */
     public void dispatch(String rawJson) {
         final Update u = parse(rawJson);
-
-        // Роутинг по типу события и содержимому
         try {
             route(u);
         } catch (Exception e) {
-            // падать нельзя — MAX ждёт 200 OK; логируем и двигаемся дальше
-            log.error("Handler error for updateType={} eventId={}: {}",
-                    u.getUpdateType(), u.getEventId(), e.toString(), e);
+            log.error("Handler error for updateType={} eventId={}: {}", u.getUpdateType(), u.getEventId(), e.toString(), e);
         }
     }
 
@@ -37,15 +29,12 @@ public class UpdateRouter {
         try {
             return om.readValue(raw, Update.class);
         } catch (Exception e) {
-            // плохой вход — лог и выходим; можно метрику «bad_payload»
             log.warn("Bad payload: {}", truncate(raw), e);
-            // возвращаем пустой Update, чтобы безопасно упасть в route()
             return new Update();
         }
     }
 
     private void route(Update u) {
-        // Пример 1: команды
         if (u.isTextCommand("/start")) {
             max.sendStartKeyboard(u.chatId());
             max.sendOpenLink(u.chatId(), "https://dev.max.ru/docs/webapps/bridge", "press");
@@ -57,13 +46,39 @@ public class UpdateRouter {
             return;
         }
 
-        // Пример 2: эхо любого текста
         if (u.isType("message_created") && u.getMessage() != null) {
             var body = u.getMessage().getBody();
             var text = body != null ? body.getText() : null;
             if (text != null && !text.isBlank()) {
-                max.sendText(u.chatId(), "Вы сказали: " + text);
-                return;
+                try {
+                    var parsed = nlp.parseText(text).block(java.time.Duration.ofSeconds(12));
+                    if (parsed == null || parsed.tasks() == null || parsed.tasks().isEmpty()) {
+                        max.sendText(u.chatId(), "Не смог разобрать задачу. Сформулируй чуть яснее?");
+                        return;
+                    }
+                    var sb = new StringBuilder("Разобрал так:\n");
+                    int i = 1;
+                    for (var t : parsed.tasks()) {
+                        sb.append(i++).append(". ")
+                                .append(t.title() != null ? t.title() : "—");
+                        if (t.description() != null && !t.description().isBlank()) {
+                            sb.append(" (").append(t.description()).append(")");
+                        }
+                        if (t.date() != null || t.time() != null) {
+                            sb.append(" — ");
+                            if (t.date() != null) sb.append(t.date());
+                            if (t.date() != null && t.time() != null) sb.append(" ");
+                            if (t.time() != null) sb.append(t.time());
+                        }
+                        if (t.splitOf() != null) sb.append(" [группа ").append(t.splitOf()).append("]");
+                        sb.append("\n");
+                    }
+                    max.sendText(u.chatId(), sb.toString());
+                    return;
+                } catch (Exception e) {
+                    max.sendText(u.chatId(), "Упс, модель не ответила вовремя. Попробуем ещё раз позже.");
+                    return;
+                }
             }
         }
 

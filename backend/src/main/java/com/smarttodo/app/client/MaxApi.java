@@ -1,5 +1,6 @@
 package com.smarttodo.app.client;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -27,7 +28,7 @@ public class MaxApi {
         this.client = client;
     }
 
-    /** Отправка простого текста в чат (MAX: POST /messages?chat_id=...) */
+    // Отправка простого текста в чат (MAX: POST /messages?chat_id=...)
     public void sendText(long chatId, String text) {
         if (chatId <= 0) throw new IllegalArgumentException("chatId must be > 0");
         if (text == null || text.isBlank()) return; // молча игнорим пустяки
@@ -104,7 +105,7 @@ public class MaxApi {
                 .block();
     }
 
-    /** MAX принимает получателя только в query; в теле — контент (NewMessageBody). */
+    // MAX принимает получателя только в query; в теле — контент (NewMessageBody)
     private Mono<ResponseEntity<Void>> postMessage(long chatId, Object body) {
         return client.post()
                 .uri(b -> b.path("/messages").queryParam("chat_id", chatId).build())
