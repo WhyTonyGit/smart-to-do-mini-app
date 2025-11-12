@@ -47,12 +47,14 @@ services:
       - ollama:/root/.ollama
     environment:
       - OLLAMA_HOST=http://ollama:11434
+      - MODEL=smollm2:1.7b-instruct-q4_0
     entrypoint: [ "/bin/sh","-lc" ]
     command:
       - |
         set -e
         echo "Using OLLAMA_HOST=$$OLLAMA_HOST"
 
+        # Ждём доступности API
         i=1
         while [ "$$i" -le 120 ]; do
           if ollama list >/dev/null 2>&1; then
@@ -63,26 +65,32 @@ services:
           sleep 1
         done
 
-        # если модель уже есть — выходим
-        if ollama list | grep -q '^qwen2.5:0.5b'; then
-          echo 'Model qwen2.5:0.5b already present'
-          exit 0
+        # Пулл, если нет модели
+        if ollama list | grep -q "^$${MODEL}"; then
+          echo "Model $${MODEL} already present"
+        else
+          echo "Pulling $${MODEL}..."
+          n=0
+          until [ "$$n" -ge 3 ]; do
+            if OLLAMA_DEBUG=info ollama pull "$${MODEL}"; then
+              echo "Pull complete"
+              break
+            fi
+            n=$$((n+1))
+            echo "Pull failed (attempt $$n), retrying in 5s..."
+            sleep 5
+          done
         fi
 
-        echo 'Pulling qwen2.5:0.5b...'
-        n=0
-        until [ "$$n" -ge 3 ]; do
-          if OLLAMA_DEBUG=info ollama pull qwen2.5:0.5b; then
-            echo 'Pull complete'
-            exit 0
-          fi
-          n=$$((n+1))
-          echo "Pull failed (attempt $$n), retrying in 5s..."
-          sleep 5
-        done
+        echo "Warming up $${MODEL}..."
+        if ollama run "$${MODEL}" "test" --verbose 2>&1 | head -n 5; then
+          echo "Warmup successful"
+        else
+          echo "Warmup failed — model may still work"
+        fi
 
-        echo 'Pull failed after 3 attempts'
-        exit 1
+        echo "Setup complete"
+        exit 0
     restart: "no"
 
   app:
@@ -103,7 +111,7 @@ services:
       SPRING_DATASOURCE_USERNAME: smarttodo
       SPRING_DATASOURCE_PASSWORD: smarttodo
       OLLAMA_API_BASE_URL: http://ollama:11434
-      OLLAMA_API_MODEL: qwen2.5:0.5b
+      OLLAMA_API_MODEL: smollm2:1.7b-instruct-q4_0
       OLLAMA_API_TIMEOUT_SECONDS: 120
       REMINDER_MODEL: reminder-title
     depends_on:

@@ -3,9 +3,6 @@ package com.smarttodo.app.llm;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smarttodo.app.llm.dto.ParseResult;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -35,13 +32,15 @@ public class OllamaClient {
     public Mono<ParseResult> chatExtractJson(String systemPrompt, String userPrompt) {
         var body = Map.of(
                 "model", props.model(),
-                "stream", false,
+                "stream", true,
                 "format", "json",
+                "keep_alive", "10m",
                 "options", Map.of(
                         "temperature", 0.0,
                         "top_p", 0.9,
                         "seed", 42,
-                        "num_predict", 300
+                        "num_predict", 128,
+                        "stop", List.of("```", "<|im_end|>")
                 ),
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
@@ -49,18 +48,36 @@ public class OllamaClient {
                 )
         );
 
+        StringBuilder acc = new StringBuilder();
+
         return client.post()
                 .uri("/api/chat")
                 .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_NDJSON)   // ollama стримит NDJSON
                 .bodyValue(body)
                 .retrieve()
-                .bodyToMono(String.class)
+                .bodyToFlux(String.class)
                 .timeout(Duration.ofSeconds(props.timeoutSeconds()))
-                .flatMap(raw -> {
+                .map(chunk -> {
+                    // каждый chunk — JSON-объект с полями { "message": { "content": "..." }, "done": false }
                     try {
-                        JsonNode root = om.readTree(raw);
-                        String content = root.path("message").path("content").asText("");
-                        if (content == null || content.isBlank()) {
+                        JsonNode n = om.readTree(chunk);
+                        if (n.path("message").has("content")) {
+                            acc.append(n.path("message").path("content").asText(""));
+                        }
+                        return n.path("done").asBoolean(false);
+                    } catch (Exception e) {
+                        // игнорим мусорные чанки/пустые keep-alive строки
+                        return false;
+                    }
+                })
+                .filter(done -> done)                  // ждём финальный чанк
+                .next()
+                .flatMap(done -> {
+                    try {
+                        // format:"json" даёт JSON-текст в acc — парсим в твою модель
+                        var content = acc.toString().trim();
+                        if (content.isBlank()) {
                             return Mono.error(new IllegalStateException("empty LLM content"));
                         }
                         ParseResult pr = om.readValue(content, ParseResult.class);
@@ -69,7 +86,5 @@ public class OllamaClient {
                         return Mono.error(new IllegalStateException("Failed to parse LLM JSON: " + e.getMessage(), e));
                     }
                 });
-    }
-
-
+        }
 }
