@@ -1,21 +1,33 @@
-package com.smarttodo.app.client;
+package com.smarttodo.app.bot;
 
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smarttodo.app.client.MaxApi;
 import com.smarttodo.app.dto.Update;
 import com.smarttodo.app.llm.NlpService;
+import com.smarttodo.app.service.HabitService;
+import com.smarttodo.app.service.TaskService;
+import com.smarttodo.app.service.UserService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UpdateRouter {
+    private static final Logger log = LoggerFactory.getLogger(UpdateRouter.class);
 
     private final ObjectMapper om;
     private final MaxApi max;
     private final NlpService nlp;
 
+    private final UserService userService;
+    private final TaskService taskService;
+    private final HabitService habitService;
+
+    /** Главная точка входа: вызывается контроллером вебхука */
     public void dispatch(String rawJson) {
         final Update u = parse(rawJson);
         try {
@@ -34,18 +46,45 @@ public class UpdateRouter {
         }
     }
 
-    private void route(Update u) {
+    private void route(Update u) throws JsonProcessingException {
+        log.info("ROUTE: {}", om.writeValueAsString(u));
+        log.info("Update: {}", u.toString());
+        log.info("Is text command: {}", u.isTextCommand("/start"));
+
+        // Пример 1: команды
         if (u.isTextCommand("/start")) {
+            log.info("ROUTE: start");
             max.sendStartKeyboard(u.chatId());
-            max.sendOpenLink(u.chatId(), "https://dev.max.ru/docs/webapps/bridge", "press");
             return;
         }
 
-        if (u.isCallback("start")) {
-            max.sendText(u.chatId(), "Пока в разработке.");
-            return;
-        }
+        // закомментил твой кусок, потому что ниже кусок кода конфликтует с этим, а там llm встроена. Нужно их соединить, чтобы всё работало
+//        if (u.isCallback()) {
+//            switch (u.getPayload()) {
+//                case "tasks-handler" -> {
+//                    max.sendTaskKeyboard(u.chatId());
+//                    break;
+//                }
+//                case "habit-handler" -> {
+//                    max.sendText(u.chatId(), "Пока в разработке.");
+//                    break;
+//                }
+//                case "notification-handler" -> {
+//                    max.sendText(u.chatId(), "Пока в разработке..");
+//                    break;
+//                }
+//                case "tasks-create-new" -> {
+//                    max.sendText(u.chatId(), "Пока в разработке...");
+//                    break;
+//                }
+//                default -> {
+//                    max.sendText(u.chatId(), "Произошла ошибка на сервере, приносим свои извинения.");
+//                    break;
+//                }
+//            }
+//        }
 
+        // тут llm
         if (u.isType("message_created") && u.getMessage() != null) {
             var body = u.getMessage().getBody();
             var text = body != null ? body.getText() : null;
