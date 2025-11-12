@@ -17,29 +17,110 @@ services:
       retries: 10
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: smarttodo-ollama
+    restart: unless-stopped
+    init: true
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=30m
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    command: ["serve"]
+
+  # One-shot контейнер который качает модель и выходит
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: smarttodo-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - MODEL=smollm2:1.7b-instruct-q4_0
+    entrypoint: [ "/bin/sh","-lc" ]
+    command:
+      - |
+        set -e
+        echo "Using OLLAMA_HOST=$$OLLAMA_HOST"
+
+        # Ждём доступности API
+        i=1
+        while [ "$$i" -le 120 ]; do
+          if ollama list >/dev/null 2>&1; then
+            break
+          fi
+          echo "Waiting for Ollama API... ($$i)"
+          i=$$((i+1))
+          sleep 1
+        done
+
+        # Пулл, если нет модели
+        if ollama list | grep -q "^$${MODEL}"; then
+          echo "Model $${MODEL} already present"
+        else
+          echo "Pulling $${MODEL}..."
+          n=0
+          until [ "$$n" -ge 3 ]; do
+            if OLLAMA_DEBUG=info ollama pull "$${MODEL}"; then
+              echo "Pull complete"
+              break
+            fi
+            n=$$((n+1))
+            echo "Pull failed (attempt $$n), retrying in 5s..."
+            sleep 5
+          done
+        fi
+
+        echo "Warming up $${MODEL}..."
+        if ollama run "$${MODEL}" "test" --verbose 2>&1 | head -n 5; then
+          echo "Warmup successful"
+        else
+          echo "Warmup failed — model may still work"
+        fi
+
+        echo "Setup complete"
+        exit 0
+    restart: "no"
+
   app:
-    build: .
     container_name: smarttodo-app
+    build: .
     read_only: true
     user: "1000:1000"
     env_file:
       - ./secrets-max.env
     volumes:
-      - ./secrets-db:/etc/smarttodo/secrets-db:ro # секреты БД
+      - ./secrets-db:/etc/smarttodo/secrets-db:ro
     tmpfs:
       - /tmp
     ports:
       - "8080:8080"
     environment:
-      - MAX_API_BASE_URL=https://platform-api.max.ru
-      - MAX_API_TOKEN= #токен бота
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/smarttodo
-      - SPRING_DATASOURCE_USERNAME=smarttodo
-      - SPRING_DATASOURCE_PASSWORD=smarttodo
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/smarttodo
+      SPRING_DATASOURCE_USERNAME: smarttodo
+      SPRING_DATASOURCE_PASSWORD: smarttodo
+      OLLAMA_API_BASE_URL: http://ollama:11434
+      OLLAMA_API_MODEL: smollm2:1.7b-instruct-q4_0
+      OLLAMA_API_TIMEOUT_SECONDS: 120
+      REMINDER_MODEL: reminder-title
     depends_on:
       db:
         condition: service_healthy
+      ollama:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
   pgdata:
+  ollama:
