@@ -36,3 +36,4 @@ build/
 ../secrets/
 ../secrets/**
 .env
+secrets-max.env

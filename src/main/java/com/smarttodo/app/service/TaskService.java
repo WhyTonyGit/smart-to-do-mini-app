@@ -24,10 +24,10 @@ public class TaskService {
     private final UserService userService;
 
     @Transactional
-    public TaskDto createTask(Long userId, TaskDto createTaskDto) {
-        UserEntity user = userService.getUserByChatId(userId);
+    public TaskDto createTask(Long chatId, TaskDto createTaskDto) {
+        UserEntity user = userService.getUserByChatId(chatId);
 
-        TaskEntity task = new TaskEntity(user, createTaskDto.title());
+        TaskEntity task = new TaskEntity(user, createTaskDto.title(), chatId);
         task.setDescription(createTaskDto.description());
         task.setStatus(TaskStatus.NEW);
         task.setPriority(createTaskDto.priority());
@@ -59,55 +59,64 @@ public class TaskService {
     @Transactional
     public void markTaskAsUncompleted(Long userId, Long taskId) {
         TaskEntity task = getTaskByIdAndUserId(taskId, userId);
+        task.setStatus(TaskStatus.NEW);
+        task.setCompletedAt(null);
+        taskRepository.save(task);
+    }
+
+    @Transactional
+    public void markTaskAsInProgress(Long userId, Long taskId) {
+        TaskEntity task = getTaskByIdAndUserId(taskId, userId);
         task.setStatus(TaskStatus.IN_PROGRESS);
         task.setCompletedAt(null);
         taskRepository.save(task);
     }
 
+
     @Transactional(readOnly = true)
-    public List<TaskDto> getAllTasks(Long userId) {
-        return taskRepository.findAllByUser_Id(userId).stream()
+    public List<TaskDto> getAllTasks(Long chatId) {
+        return taskRepository.findAllByChatId(chatId).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getAllTasksForToday(Long userId) {
+    public List<TaskDto> getAllTasksForToday(Long chatId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
-        return taskRepository.findAllByUser_IdAndDeadlineBetween(userId, startOfDay, endOfDay).stream()
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfDay, endOfDay).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getAllTasksForWeek(Long userId) {
+    public List<TaskDto> getAllTasksForWeek(Long chatId) {
         LocalDateTime startOfWeek = LocalDate.now().atStartOfDay();
         LocalDateTime endOfWeek = startOfWeek.plusDays(7).with(LocalTime.MAX);
 
-        return taskRepository.findAllByUser_IdAndDeadlineBetween(userId, startOfWeek, endOfWeek).stream()
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfWeek, endOfWeek).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getUncompletedTasksForToday(Long userId) {
+    public List<TaskDto> getUncompletedTasksForToday(Long chatId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
-        return taskRepository.findAllByUser_IdAndDeadlineBetween(userId, startOfDay, endOfDay).stream()
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfDay, endOfDay).stream()
                 .filter(task -> task.getStatus() != TaskStatus.DONE)
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getUncompletedTasksForWeek(Long userId) {
+    public List<TaskDto> getUncompletedTasksForWeek(Long chatId) {
         LocalDateTime startOfWeek = LocalDate.now().atStartOfDay();
         LocalDateTime endOfWeek = startOfWeek.plusDays(7).with(LocalTime.MAX);
 
-        return taskRepository.findAllByUser_IdAndDeadlineBetween(userId, startOfWeek, endOfWeek).stream()
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfWeek, endOfWeek).stream()
                 .filter(task -> task.getStatus() != TaskStatus.DONE)
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -141,7 +150,7 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<TaskDto> getTasksByStatus(Long userId, TaskStatus status) {
-        return taskRepository.findAllByUser_IdAndStatus(userId, status).stream()
+        return taskRepository.findAllByChatIdAndStatus(userId, status).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
