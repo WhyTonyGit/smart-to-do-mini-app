@@ -272,13 +272,13 @@ public class TaskManager {
                 messageSender.sendTask(u.chatId(), task);
             }
             case "tasks-set-status-in_progress" -> {
-                taskService.markTaskAsInProgress(task.id());
+//                taskService.markTaskAsInProgress(task.id());
             }
             case "tasks-set-status-done" -> {
-                taskService.markTaskAsCompleted(task.id());
+//                taskService.markTaskAsCompleted(task.id());
             }
             case "tasks-delete" -> {
-                taskService.deleteTask(task.id());
+//                taskService.deleteTask(task.id());
             }
         }
     }

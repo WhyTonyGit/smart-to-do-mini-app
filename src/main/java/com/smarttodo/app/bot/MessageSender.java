@@ -247,7 +247,7 @@ public class MessageSender {
                 .text(sb.toString())
                 .format("markdown");
         for (var task : tasks) {
-            body.addCallbackButton(task.status().getEmoji() + ' ' + task.title(), "task-id:%s".formatted(task.id()));
+            body.addCallbackButton(task.status().getEmoji() + ' ' + task.title(), "tasks-id:%s".formatted(task.id()));
         }
         body.addCallbackButton("Создать задачу", "tasks-create-new");
         body.addCallbackButton("Вернуться в меню", "home-page");

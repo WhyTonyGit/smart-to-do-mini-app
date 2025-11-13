@@ -121,8 +121,9 @@ public class UpdateRouter {
         if (u.isCallback()) {
             log.info("ROUTE: handle callback, chatId={}, userId={}, payload={}", u.chatId(), u.userId(), u.getPayload());
 
-            if (Objects.equals(u.getPayload().split(":")[0], "task-id")) {
+            if (Objects.equals(u.getPayload().split(":")[0], "tasks-id")) {
                 taskManager.pickTask(u);
+                return;
             }
 
             switch (u.getPayload()) {
