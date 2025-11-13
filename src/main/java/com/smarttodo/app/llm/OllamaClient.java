@@ -40,6 +40,7 @@ public class OllamaClient {
                         "top_p", 0.9,
                         "seed", 42,
                         "num_predict", 128,
+                        "num_ctx", 1024,
                         "stop", List.of("```", "<|im_end|>")
                 ),
                 "messages", List.of(
@@ -53,13 +54,12 @@ public class OllamaClient {
         return client.post()
                 .uri("/api/chat")
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_NDJSON)   // ollama стримит NDJSON
+                .accept(MediaType.APPLICATION_NDJSON)
                 .bodyValue(body)
                 .retrieve()
                 .bodyToFlux(String.class)
                 .timeout(Duration.ofSeconds(props.timeoutSeconds()))
                 .map(chunk -> {
-                    // каждый chunk — JSON-объект с полями { "message": { "content": "..." }, "done": false }
                     try {
                         JsonNode n = om.readTree(chunk);
                         if (n.path("message").has("content")) {
@@ -67,15 +67,13 @@ public class OllamaClient {
                         }
                         return n.path("done").asBoolean(false);
                     } catch (Exception e) {
-                        // игнорим мусорные чанки/пустые keep-alive строки
                         return false;
                     }
                 })
-                .filter(done -> done)                  // ждём финальный чанк
+                .filter(done -> done)
                 .next()
                 .flatMap(done -> {
                     try {
-                        // format:"json" даёт JSON-текст в acc — парсим в твою модель
                         var content = acc.toString().trim();
                         if (content.isBlank()) {
                             return Mono.error(new IllegalStateException("empty LLM content"));

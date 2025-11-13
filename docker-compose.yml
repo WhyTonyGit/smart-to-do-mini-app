@@ -47,7 +47,7 @@ services:
       - ollama:/root/.ollama
     environment:
       - OLLAMA_HOST=http://ollama:11434
-      - MODEL=smollm2:1.7b-instruct-q4_0
+      - MODEL=qwen2.5:0.5b
     entrypoint: [ "/bin/sh","-lc" ]
     command:
       - |
@@ -111,7 +111,7 @@ services:
       SPRING_DATASOURCE_USERNAME: smarttodo
       SPRING_DATASOURCE_PASSWORD: smarttodo
       OLLAMA_API_BASE_URL: http://ollama:11434
-      OLLAMA_API_MODEL: smollm2:1.7b-instruct-q4_0
+      OLLAMA_API_MODEL: qwen2.5:0.5b
       OLLAMA_API_TIMEOUT_SECONDS: 120
       REMINDER_MODEL: reminder-title
     depends_on:
