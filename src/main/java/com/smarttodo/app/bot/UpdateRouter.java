@@ -103,11 +103,8 @@ public class UpdateRouter {
                         if (t.description() != null && !t.description().isBlank()) {
                             sb.append(" (").append(t.description()).append(")");
                         }
-                        if (t.date() != null || t.time() != null) {
-                            sb.append(" — ");
-                            if (t.date() != null) sb.append(t.date());
-                            if (t.date() != null && t.time() != null) sb.append(" ");
-                            if (t.time() != null) sb.append(t.time());
+                        if (t.datetime() != null && !t.datetime().isBlank()) {
+                            sb.append(" — ").append(t.datetime());
                         }
                         if (t.splitOf() != null) sb.append(" [группа ").append(t.splitOf()).append("]");
                         sb.append("\n");
