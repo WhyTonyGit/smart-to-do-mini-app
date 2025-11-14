@@ -12,7 +12,7 @@ public class MotivationService {
     private final OllamaClient ollama;
 
     public Mono<MotivationResponse> generateMotivation(int streakDays) {
-        String system = String.format("Перепиши это своими словами: Ты молодец, держишься уже $d, продолжай в том же духе", streakDays);
+        String system = String.format("Перепиши это своими словами: Ты молодец, держишься уже %d, продолжай в том же духе", streakDays);
         String user = system;
 
         return ollama.chatText(system, user)
