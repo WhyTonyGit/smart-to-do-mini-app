@@ -11,11 +11,14 @@ import reactor.core.publisher.Mono;
 public class MotivationService {
     private final OllamaClient ollama;
 
-    public Mono<MotivationResponse> generateMotivation(int streakDays) {
-        String system = String.format("Перепиши это своими словами: Ты молодец, держишься уже %d, продолжай в том же духе", streakDays);
-        String user = system;
+    private static final String SYSTEM_PROMPT = "Rephrase the user sentence in Russian. Keep the same meaning. " +
+            "Do not copy the sentence, change the words and word order. " +
+            "Answer with only the new Russian sentence.";
 
-        return ollama.chatText(system, user)
+    public Mono<MotivationResponse> generateMotivation(int streakDays) {
+        String user = String.format("Ты молодец, держишься уже %d дней, продолжай в том же духе.", streakDays);
+
+        return ollama.chatText(SYSTEM_PROMPT, user)
                 .map(text -> new MotivationResponse(cleanMessage(text)));
     }
 
