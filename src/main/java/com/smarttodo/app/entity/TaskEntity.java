@@ -30,6 +30,10 @@ public class TaskEntity {
     @NonNull
     private final String title;
 
+    @Column(name = "chat_id", nullable = false, length = 255)
+    @NonNull
+    private final Long chatId;
+
     @Column(name = "description", columnDefinition = "text")
     private String description;
 

@@ -16,8 +16,8 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 public class UserEntity {
-    @Id
-    //Сюда кладем userId, так как он уникален
+    @Id //Сюда кладем userId, так как он уникален
+    @NonNull
     private Long id;
 
     @Column(name = "chat_id", nullable = false, unique = true, updatable = false)
@@ -36,7 +36,6 @@ public class UserEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HabitEntity> habits = new ArrayList<>();
-
 
     @PrePersist
     protected void onCreate() {

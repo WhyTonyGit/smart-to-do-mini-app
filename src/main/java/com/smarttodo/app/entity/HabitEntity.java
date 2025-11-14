@@ -22,6 +22,10 @@ public class HabitEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "chat_id", nullable = false)
+    @NonNull
+    private final Long chatId;
+
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
 
     @JoinColumn(name = "user_id", nullable = false,

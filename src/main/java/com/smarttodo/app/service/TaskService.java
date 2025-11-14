@@ -24,10 +24,10 @@ public class TaskService {
     private final UserService userService;
 
     @Transactional
-    public TaskDto createTask(Long userId, TaskDto createTaskDto) {
-        UserEntity user = userService.getUserByChatId(userId);
+    public TaskDto createTask(Long chatId, TaskDto createTaskDto) {
+        UserEntity user = userService.getUserByChatId(chatId);
 
-        TaskEntity task = new TaskEntity(user, createTaskDto.title());
+        TaskEntity task = new TaskEntity(user, createTaskDto.title(), chatId);
         task.setDescription(createTaskDto.description());
         task.setStatus(TaskStatus.NEW);
         task.setPriority(createTaskDto.priority());
@@ -38,8 +38,9 @@ public class TaskService {
     }
 
     @Transactional
-    public void updateTaskStatus(Long userId, Long taskId, TaskStatus newStatus) {
-        TaskEntity task = getTaskByIdAndUserId(taskId, userId);
+    public void updateTaskStatus(Long taskId, TaskStatus newStatus) {
+        TaskEntity task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Не найдена задача с id: " + taskId));;
         task.setStatus(newStatus);
 
         if (newStatus == TaskStatus.DONE) {
@@ -52,62 +53,64 @@ public class TaskService {
     }
 
     @Transactional
-    public void markTaskAsCompleted(Long userId, Long taskId) {
-        updateTaskStatus(userId, taskId, TaskStatus.DONE);
+    public void markTaskAsCompleted(Long taskId) {
+        updateTaskStatus(taskId, TaskStatus.DONE);
     }
 
     @Transactional
-    public void markTaskAsUncompleted(Long userId, Long taskId) {
-        TaskEntity task = getTaskByIdAndUserId(taskId, userId);
-        task.setStatus(TaskStatus.IN_PROGRESS);
-        task.setCompletedAt(null);
-        taskRepository.save(task);
+    public void markTaskAsInProgress(Long taskId) {
+        updateTaskStatus(taskId, TaskStatus.DONE);
+    }
+
+    @Transactional
+    public void markTaskAsUncompleted(Long taskId) {
+        updateTaskStatus(taskId, TaskStatus.IN_PROGRESS);
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getAllTasks(Long userId) {
-        return taskRepository.findAllByUser_Id(userId).stream()
+    public List<TaskDto> getAllTasks(Long chatId) {
+        return taskRepository.findAllByChatId(chatId).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getAllTasksForToday(Long userId) {
+    public List<TaskDto> getAllTasksForToday(Long chatId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
-        return taskRepository.findAllByUser_IdAndDeadlineBetween(userId, startOfDay, endOfDay).stream()
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfDay, endOfDay).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getAllTasksForWeek(Long userId) {
+    public List<TaskDto> getAllTasksForWeek(Long chatId) {
         LocalDateTime startOfWeek = LocalDate.now().atStartOfDay();
         LocalDateTime endOfWeek = startOfWeek.plusDays(7).with(LocalTime.MAX);
 
-        return taskRepository.findAllByUser_IdAndDeadlineBetween(userId, startOfWeek, endOfWeek).stream()
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfWeek, endOfWeek).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getUncompletedTasksForToday(Long userId) {
+    public List<TaskDto> getUncompletedTasksForToday(Long chatId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
-        return taskRepository.findAllByUser_IdAndDeadlineBetween(userId, startOfDay, endOfDay).stream()
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfDay, endOfDay).stream()
                 .filter(task -> task.getStatus() != TaskStatus.DONE)
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getUncompletedTasksForWeek(Long userId) {
+    public List<TaskDto> getUncompletedTasksForWeek(Long chatId) {
         LocalDateTime startOfWeek = LocalDate.now().atStartOfDay();
         LocalDateTime endOfWeek = startOfWeek.plusDays(7).with(LocalTime.MAX);
 
-        return taskRepository.findAllByUser_IdAndDeadlineBetween(userId, startOfWeek, endOfWeek).stream()
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfWeek, endOfWeek).stream()
                 .filter(task -> task.getStatus() != TaskStatus.DONE)
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -121,17 +124,18 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskDto updateTaskDeadline(Long userId, Long taskId, LocalDateTime newDeadline) {
-        TaskEntity task = getTaskByIdAndUserId(taskId, userId);
+    public TaskDto updateTaskDeadline(Long taskId, LocalDateTime newDeadline) {
+        TaskEntity task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Не найдена задача с id: " + taskId));;
         task.setDeadline(newDeadline);
         TaskEntity updatedTask = taskRepository.save(task);
         return toDto(updatedTask);
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getOverdueTasks(Long userId) {
+    public List<TaskDto> getOverdueTasks(Long chatId) {
         LocalDateTime now = LocalDateTime.now();
-        return taskRepository.findAllByUser_Id(userId).stream()
+        return taskRepository.findAllByChatId(chatId).stream()
                 .filter(task -> task.getDeadline() != null &&
                         task.getDeadline().isBefore(now) &&
                         task.getStatus() != TaskStatus.DONE)
@@ -140,29 +144,25 @@ public class TaskService {
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getTasksByStatus(Long userId, TaskStatus status) {
-        return taskRepository.findAllByUser_IdAndStatus(userId, status).stream()
+    public List<TaskDto> getTasksByStatus(Long chatId, TaskStatus status) {
+        return taskRepository.findAllByChatIdAndStatus(chatId, status).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TaskDto> getTasksWithoutDeadline(Long userId) {
-        return taskRepository.findAllByUser_Id(userId).stream()
+    public List<TaskDto> getTasksWithoutDeadline(Long chatId) {
+        return taskRepository.findAllByChatId(chatId).stream()
                 .filter(task -> task.getDeadline() == null)
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
-    private TaskEntity getTaskByIdAndUserId(Long taskId, Long userId) {
-        TaskEntity task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found with id: " + taskId));
-
-        if (!task.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Task does not belong to user");
-        }
-
-        return task;
+    public TaskDto deleteTask(Long taskId) {
+        TaskEntity taskToDelete = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Не найдена задача с id: " + taskId));
+        taskRepository.delete(taskToDelete);
+        return toDto(taskToDelete);
     }
 
     private TaskDto toDto(TaskEntity entity) {
