@@ -2,7 +2,7 @@ package com.smarttodo.app.llm;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smarttodo.app.llm.dto.ParseResult;
+import com.smarttodo.app.llm.task.dto.ParseResult;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -85,4 +85,42 @@ public class OllamaClient {
                     }
                 });
         }
+
+    public Mono<String> chatText(String systemPrompt, String userPrompt) {
+        var body = Map.of(
+                "model", props.model(),
+                "stream", false,
+                "keep_alive", "10m",
+                "options", Map.of(
+                        "temperature", 0.4,
+                        "top_p", 0.9,
+                        "num_predict", 64,
+                        "num_ctx", 256
+                ),
+                "messages", List.of(
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", userPrompt)
+                )
+        );
+
+        return client.post()
+                .uri("/api/chat")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(props.timeoutSeconds()))
+                .flatMap(json -> {
+                    try {
+                        JsonNode n = om.readTree(json);
+                        var content = n.path("message").path("content").asText("");
+                        if (content == null || content.isBlank()) {
+                            return Mono.error(new IllegalStateException("empty LLM content"));
+                        }
+                        return Mono.just(content.trim());
+                    } catch (Exception e) {
+                        return Mono.error(new IllegalStateException("Failed to parse LLM response: " + e.getMessage(), e));
+                    }
+                });
+    }
 }

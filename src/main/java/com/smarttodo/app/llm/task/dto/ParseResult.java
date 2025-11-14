@@ -1,4 +1,4 @@
-package com.smarttodo.app.llm.dto;
+package com.smarttodo.app.llm.task.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
