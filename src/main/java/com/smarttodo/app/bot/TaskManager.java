@@ -80,7 +80,7 @@ public class TaskManager {
                 null,
                 "...",
                 "...",
-                TaskStatus.NEW,
+                TaskStatus.UNCOMPLETED,
                 Priority.LOW,
                 null,
                 null
@@ -115,7 +115,7 @@ public class TaskManager {
                        null,
                        "...",
                        "...",
-                       TaskStatus.NEW,
+                       TaskStatus.UNCOMPLETED,
                        Priority.LOW,
                        null,
                        null
@@ -154,7 +154,7 @@ public class TaskManager {
                         null,
                         "...",
                         "...",
-                        TaskStatus.NEW,
+                        TaskStatus.UNCOMPLETED,
                         Priority.LOW,
                         null,
                         null
@@ -193,7 +193,7 @@ public class TaskManager {
                         null,
                         "...",
                         "...",
-                        TaskStatus.NEW,
+                        TaskStatus.UNCOMPLETED,
                         Priority.LOW,
                         null,
                         null
@@ -236,6 +236,17 @@ public class TaskManager {
         messageSender.sendTodayTaskList(u.chatId(), taskList);
     }
 
+    public void getTomorrowTaskList(Update u) {
+        List<TaskDto> taskList = taskService.getAllTasksForTomorrow(u.chatId());
+        taskList.sort(Comparator.comparing(TaskDto::status).thenComparing(TaskDto::deadline).thenComparing(TaskDto::priority));
+        if (taskList.isEmpty()) {
+            messageSender.sendText(u.chatId(), "На завтра нет задач.");
+            return;
+        }
+
+        messageSender.sendTodayTaskList(u.chatId(), taskList);
+    }
+
     public void getWeekTaskList(Update u) {
         List<TaskDto> taskList = taskService.getAllTasksForWeek(u.chatId());
         taskList.sort(Comparator.comparing(TaskDto::status).thenComparing(TaskDto::deadline).thenComparing(TaskDto::priority));
@@ -249,7 +260,7 @@ public class TaskManager {
 
     public void getAllTaskList(Update u) {
         List<TaskDto> taskList = taskService.getAllTasks(u.chatId()).stream()
-                .filter(task -> task.status() != TaskStatus.DONE)
+                .filter(task -> task.status() != TaskStatus.COMPLETED)
                 .sorted(Comparator.comparing(TaskDto::status)
                         .thenComparing(TaskDto::deadline)
                         .thenComparing(TaskDto::priority))
@@ -264,35 +275,28 @@ public class TaskManager {
     }
 
     public void pickTask(Update u) {
-        String taskId = u.getPayload().split(":")[1];
-        TaskDto task = taskService.getTaskById(Long.parseLong(taskId));
+        Payload payload = Payload.from(u.getPayload());
+        TaskDto task = taskService.getTaskById(payload.extractId(u.getPayload()));
 
-        switch (u.getPayload().split(":")[0]) {
-            case "tasks-id" -> {
-                messageSender.sendTask(u.chatId(), task);
+        switch (payload) {
+            case TASKS_ID -> {
+                break;
             }
-            case "tasks-set-status-in_progress" -> {
-//                taskService.markTaskAsInProgress(task.id());
+            case TASKS_SET_STATUS_UNCOMPLETED -> {
+                taskService.markTaskAsUncompleted(task.id());
             }
-            case "tasks-set-status-done" -> {
-//                taskService.markTaskAsCompleted(task.id());
+            case TASKS_SET_STATUS_IN_PROGRESS -> {
+                taskService.markTaskAsInProgress(task.id());
             }
-            case "tasks-delete" -> {
-//                taskService.deleteTask(task.id());
+            case TASKS_SET_STATUS_COMPLETED -> {
+                taskService.markTaskAsCompleted(task.id());
             }
-        }
-    }
-
-    public void taskSetStatus(Update u) {
-        String taskId = u.getPayload().split(":")[1];
-        TaskDto task = taskService.getTaskById(Long.parseLong(taskId));
-
-        switch (u.getPayload().split(":")[0]) {
-            case "tasks-set-status-in_progress" -> {
-
+            case TASKS_DELETE -> {
+                taskService.deleteTask(task.id());
             }
         }
 
+        messageSender.sendTask(u.chatId(), taskService.getTaskById(payload.extractId(u.getPayload())));
     }
 
     public static String formatLocalDateTime(LocalDateTime dateTime) {

@@ -1,19 +1,17 @@
 package com.smarttodo.app.entity;
 
+import lombok.Getter;
 
+@Getter
 public enum HabitStatus {
-    /**
-     * Привычка добавлена в планах, однако пользователь
-     * еще не начал ее выполнение, стоит по умолчанию
-     */
-    ARCHIVED,
+    ARCHIVED("📦"),
+    IN_PROGRESS("🔄"),
+    PAUSED("⏸️"),
+    COMPLETED("✅");
 
-    /**
-     * Все понятно, устанавливается при первом выполнении привычки
-     */
-    IN_PROGRESS,
+    private final String emoji;
 
-    PAUSED,
-
-    COMPLETED
+    HabitStatus(String emoji) {
+        this.emoji = emoji;
+    }
 }

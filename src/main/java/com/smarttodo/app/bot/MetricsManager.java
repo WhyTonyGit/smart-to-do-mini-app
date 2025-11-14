@@ -1,6 +1,6 @@
-package com.smarttodo.app.service;
+package com.smarttodo.app.bot;
 
-import com.smarttodo.app.client.MaxApi;
+import com.smarttodo.app.bot.MessageSender;
 import com.smarttodo.app.dto.WeeklySummaryDto;
 import com.smarttodo.app.entity.HabitEntity;
 import lombok.RequiredArgsConstructor;
@@ -11,21 +11,21 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class ChatService {
+public class MetricsManager {
 
-    private final MaxApi maxApi;
+    private final MessageSender messageSender;
 
     public void notifyStreakMilestones(Long chatId, HabitEntity habit, int currentStreak) {
         if (currentStreak == 7) {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "🎉 Отличный результат! Вы выполняете привычку \"" + habit.getTitle() +
                             "\" уже 7 дней подряд! Так держать!");
         } else if (currentStreak == 30) {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "🏆 Потрясающе! 30 дней с привычкой \"" + habit.getTitle() +
                             "\"! Вы формируете устойчивую привычку!");
         } else if (currentStreak % 100 == 0 && currentStreak > 0) {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "🌟 Невероятно! Целых " + currentStreak + " дней с привычкой \"" +
                             habit.getTitle() + "\"! Вы настоящий герой!");
         }
@@ -33,33 +33,33 @@ public class ChatService {
 
     public void notifyWeeklyAchievements(Long chatId, WeeklySummaryDto weeklySummary) {
         if (weeklySummary.taskStats().completionRate() > 80) {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "📊 Отличная неделя! Вы выполнили " +
                             String.format("%.1f", weeklySummary.taskStats().completionRate()) +
                             "% запланированных задач! Так держать!");
         } else if (weeklySummary.taskStats().completionRate() > 50) {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "📊 Неплохо, но можно ещё улучшить результат! Вы выполнили " +
                             String.format("%.1f", weeklySummary.taskStats().completionRate()) +
                             "% запланированных задач!");
         } else {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "📊 Ой-ой, на этой неделе у вас не лучшая статистика... Вы выполнили всего " +
                             String.format("%.1f", weeklySummary.taskStats().completionRate()) +
                             "% запланированных задач. Давайте вместе улучшим этот показатель");
         }
 
         if (weeklySummary.habitStats().averageCompletionRate() > 80) {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "💪 Прекрасная работа с привычками! Средний показатель выполнения: " +
                             String.format("%.1f", weeklySummary.habitStats().averageCompletionRate()) + "%");
         } else if (weeklySummary.habitStats().averageCompletionRate() > 50) {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "У вас неплохой результат по работе с привычками! Продолжаем расти! 💪" +
                             "Средний показатель выполнения: " +
                             String.format("%.1f", weeklySummary.habitStats().averageCompletionRate()) + "%");
         } else {
-            maxApi.sendText(chatId,
+            messageSender.sendText(chatId,
                     "❗ Стоит улучшить работу с привычками! Средний показатель выполнения: " +
                             String.format("%.1f", weeklySummary.habitStats().averageCompletionRate()) + "%");
         }

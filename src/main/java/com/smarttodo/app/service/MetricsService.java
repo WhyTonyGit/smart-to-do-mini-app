@@ -77,12 +77,12 @@ public class MetricsService {
 
         long totalTasks = tasksInPeriod.size();
         long completedTasks = tasksInPeriod.stream()
-                .filter(t -> t.getStatus() == TaskStatus.DONE)
+                .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
                 .count();
         long overdueTasks = tasksInPeriod.stream()
                 .filter(t -> t.getDeadline() != null &&
                         t.getDeadline().isBefore(LocalDateTime.now()) &&
-                        t.getStatus() != TaskStatus.DONE)
+                        t.getStatus() != TaskStatus.COMPLETED)
                 .count();
 
         Map<Priority, Long> tasksByPriority = tasksInPeriod.stream()
