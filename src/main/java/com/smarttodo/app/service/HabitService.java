@@ -1,5 +1,6 @@
 package com.smarttodo.app.service;
 
+import com.smarttodo.app.dto.HabitCheckinDto;
 import com.smarttodo.app.dto.HabitDto;
 import com.smarttodo.app.entity.HabitCheckinEntity;
 import com.smarttodo.app.entity.HabitEntity;
@@ -84,41 +85,45 @@ public class HabitService {
     }
 
     @Transactional(readOnly = true)
-    public List<HabitDto> getHabitsForToday(Long chatId) {
+    public List<HabitCheckinDto> getHabitsForToday(Long chatId) {
         LocalDate today = LocalDate.now();
+
         return habitRepository.findAllByChatId(chatId).stream()
                 .filter(habit -> isHabitDueToday(habit, today))
-                .map(this::toDto)
+                .map(habit -> {
+                    boolean completedOnTime = habitCheckinRepository.existsByHabit_IdAndDay(habit.getId(), today);
+                    return toCheckinDto(habit, today, completedOnTime);
+                })
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<HabitDto> getHabitsForWeek(Long chatId) {
-        LocalDate today = LocalDate.now();
-        LocalDate weekEnd = today.plusDays(7);
+    public List<HabitCheckinDto> getHabitsForWeek(Long chatId) {
+        LocalDate end = LocalDate.now();
+        LocalDate start = end.minusDays(6);
 
         return habitRepository.findAllByChatId(chatId).stream()
-                .filter(habit -> isHabitDueInPeriod(habit, today, weekEnd))
-                .map(this::toDto)
+                .flatMap(habit -> start.datesUntil(end.plusDays(1))
+                        .filter(day -> isHabitDueToday(habit, day))
+                        .map(day -> {
+                            boolean completedOnTime = habitCheckinRepository.existsByHabit_IdAndDay(habit.getId(), day);
+                            return toCheckinDto(habit, day, completedOnTime);
+                        })
+                )
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<HabitDto> getUncompletedHabitsForToday(Long chatId) {
+    public List<HabitCheckinDto> getUncompletedHabitsForToday(Long chatId) {
         return getHabitsForToday(chatId).stream()
-                .filter(habit -> !isHabitCompletedForDate(habit.id(), LocalDate.now()))
+                .filter(habit -> !habit.completedOnTime())
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<HabitDto> getUncompletedHabitsForWeek(Long chatId) {
-        LocalDate today = LocalDate.now();
-
+    public List<HabitCheckinDto> getUncompletedHabitsForWeek(Long chatId) {
         return getHabitsForWeek(chatId).stream()
-                .filter(habit -> {
-                    LocalDate habitDate = getNextDueDate(habit, today);
-                    return !isHabitCompletedForDate(habit.id(), habitDate);
-                })
+                .filter(habit -> !habit.completedOnTime())
                 .toList();
     }
 
@@ -186,6 +191,19 @@ public class HabitService {
                 entity.getInterval(),
                 entity.getPriority(),
                 entity.getGoalDate()
+        );
+    }
+
+    private HabitCheckinDto toCheckinDto(HabitEntity habit, LocalDate day, boolean completedOnTime) {
+        return new HabitCheckinDto(
+                habit.getId(),
+                habit.getTitle(),
+                habit.getDescription(),
+                habit.getStatus(),
+                habit.getInterval(),
+                habit.getPriority(),
+                day,
+                completedOnTime
         );
     }
 }
