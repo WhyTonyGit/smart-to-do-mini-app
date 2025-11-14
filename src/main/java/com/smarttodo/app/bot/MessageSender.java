@@ -297,10 +297,6 @@ public class MessageSender {
                 ? habit.interval().name()
                 : "не задана";
 
-        String priority = habit.priority() != null
-                ? habit.priority().name()
-                : "не задан";
-
         String goalDate = habit.goalDate() != null
                 ? habit.goalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
                 : "не задана";
@@ -308,22 +304,30 @@ public class MessageSender {
         var body = InlineKeyboardBuilder.create()
                 .text("""
                         %s **%s**
+                        Выполнена: %s
                         Описание: %s
                         Периодичность: %s
-                        Приоритет: %s
                         Цель до: %s
                         Статус: %s
                         """.formatted(
                         habit.status().getEmoji(),
                         habit.title(),
+                        habit.isCompleted() ? "да" : "нет",
                         description,
                         interval,
-                        priority,
                         goalDate,
-                        habit.status()
+                        habit.status().getDescription()
                 ))
                 .format("markdown")
-                .addCallbackButton("Отметить выполненной сегодня", Payload.HABITS_SET.key())
+                .addCallbackButton("Отметить невыполненной сегодня", Payload.HABITS_MARK_AS_UNCOMPLETED.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Отметить выполненной сегодня", Payload.HABITS_MARK_AS_COMPLETED.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Изменить название", Payload.HABITS_CHANGE_TITLE.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Изменить описание", Payload.HABITS_CHANGE_DESCRIPTION.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Изменить периодичность", Payload.HABITS_CHANGE_INTERVAL.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Изменить дату завершения привычки", Payload.HABITS_CHANGE_GOAL_DATE.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Поставить статус: завершена", Payload.HABITS_SET_STATUS_ARCHIVED.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Поставить статус: в процессе", Payload.HABITS_SET_STATUS_IN_PROGRESS.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Поставить статус: приостановлена", Payload.HABITS_SET_STATUS_PAUSED.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("Вернуться в меню", Payload.HOME_PAGE.key())
                 .build();
 
@@ -548,7 +552,6 @@ public class MessageSender {
                     %s **%s**
                     Описание: %s
                     Периодичность: %s
-                    Приоритет: %s
                     Цель до: %s
 
                     """.formatted(
@@ -558,7 +561,6 @@ public class MessageSender {
                             ? "_нет описания_"
                             : habit.description(),
                     habit.interval() == null ? "не задана" : habit.interval().name(),
-                    habit.priority() == null ? "не задан" : habit.priority().name(),
                     habit.goalDate() == null
                             ? "не задана"
                             : habit.goalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
@@ -582,5 +584,60 @@ public class MessageSender {
         body.addCallbackButton("🏠 В профиль",        Payload.HOME_PAGE.key());
 
         sendMessage(chatId, body.build(), MessageMarker.HABIT_LIST);
+    }
+
+    public void sendHabitTitleInput(long chatId) {
+        String text = """
+                Введите название привычки:
+                """;
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("text", text);
+
+        sendMessage(chatId, body, MessageMarker.CHANGE_HABIT_TITLE);
+    }
+
+    public void sendHabitDescriptionInput(long chatId) {
+        String text = """
+                Введите краткое описание привычки:
+                """;
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("text", text);
+
+        sendMessage(chatId, body, MessageMarker.CHANGE_HABIT_DESCRIPTION);
+    }
+
+    public void sendHabitIntervalInput(long chatId) {
+        var body = InlineKeyboardBuilder.create()
+                .text("""
+                        **Периодичность привычки**
+
+                        Выбери, как часто должна повторяться привычка:
+                        """)
+                .format("markdown")
+                .addMessageButton("Каждый понедельник", "Каждый понедельник")
+                .addMessageButton("Каждый вторник",          "Каждый вторник")
+                .addMessageButton("Каждую среду",          "Каждую среду")
+                .addMessageButton("Каждый четверг",          "Каждый четверг")
+                .addMessageButton("Каждую пятницу",          "Каждую пятницу")
+                .addMessageButton("Каждую субботу",          "Каждую субботу")
+                .addMessageButton("Каждое воскресенье",          "Каждое воскресенье")
+                .addMessageButton("Каждый будний день", "Каждый будний день")
+                .addMessageButton("Каждый выходной день",    "Каждый выходной день")
+                .build();
+
+        sendMessage(chatId, body, MessageMarker.CHANGE_HABIT_INTERVAL);
+    }
+
+    public void sendHabitGoalDateInput(long chatId) {
+        String text = """
+                Введите дату завершения привычки в формате dd.MM.yyyy:
+                """;
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("text", text);
+
+        sendMessage(chatId, body, MessageMarker.CHANGE_HABIT_GOAL_DATE);
     }
 }

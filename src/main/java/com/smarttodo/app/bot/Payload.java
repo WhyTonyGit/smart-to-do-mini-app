@@ -21,10 +21,16 @@ public enum Payload {
     HABITS_GET_WEEK("habits-get-week"),
     HABITS_STREAKS("habits-streaks"),
     HABITS_CREATE_NEW("habits-create-new"),
+    HABITS_CHANGE_TITLE("habits-change-title"),
+    HABITS_CHANGE_DESCRIPTION("habits-change-description"),
+    HABITS_CHANGE_INTERVAL("habits-change-interval"),
+    HABITS_CHANGE_GOAL_DATE("habits-change-goal-date"),
     HABITS_SET_STATUS_COMPLETED("habits-set-status-completed"),
     HABITS_SET_STATUS_ARCHIVED("habits-set-status-archived"),
     HABITS_SET_STATUS_PAUSED("habits-set-status-paused"),
     HABITS_SET_STATUS_IN_PROGRESS("habits-set-status-in-progress"),
+    HABITS_MARK_AS_COMPLETED("habits-mark-as-completed"),
+    HABITS_MARK_AS_UNCOMPLETED("habits-mark-as-uncompleted"),
 
     HOME_PAGE("home-page"),
 

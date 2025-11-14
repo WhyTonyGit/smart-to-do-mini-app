@@ -29,6 +29,11 @@ public final class InlineKeyboardBuilder {
         return this;
     }
 
+    public InlineKeyboardBuilder addMessageButton(String buttonText, String payload) {
+        rows.add(List.of(messageButton(buttonText, payload)));
+        return this;
+    }
+
     public InlineKeyboardBuilder addRow(Consumer<RowBuilder> rowConfigurer) {
         RowBuilder rb = new RowBuilder();
         rowConfigurer.accept(rb);
@@ -58,6 +63,14 @@ public final class InlineKeyboardBuilder {
     private static Map<String, Object> callbackButton(String text, String payload) {
         Map<String, Object> b = new LinkedHashMap<>();
         b.put("type", "callback");
+        b.put("text", text);
+        b.put("payload", payload);
+        return b;
+    }
+
+    private static Map<String, Object> messageButton(String text, String payload) {
+        Map<String, Object> b = new LinkedHashMap<>();
+        b.put("type", "message");
         b.put("text", text);
         b.put("payload", payload);
         return b;
