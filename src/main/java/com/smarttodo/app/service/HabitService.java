@@ -150,17 +150,15 @@ public class HabitService {
         habitCheckinRepository.save(checkin);
     }
 
-    private boolean isHabitDueToday(HabitEntity habit, LocalDate today) {
+    public boolean isHabitDueToday(HabitEntity habit, LocalDate today) {
         return habit.getStatus() == HabitStatus.IN_PROGRESS &&
                 (habit.getGoalDate() == null || !habit.getGoalDate().isBefore(today));
     }
-
     private boolean isHabitDueInPeriod(HabitEntity habit, LocalDate start, LocalDate end) {
         return habit.getStatus() == HabitStatus.IN_PROGRESS &&
                 (habit.getGoalDate() == null ||
                         (!habit.getGoalDate().isBefore(start) && !habit.getGoalDate().isAfter(end)));
     }
-
     private boolean isHabitCompletedForDate(Long habitId, LocalDate date) {
         return habitCheckinRepository.existsByHabit_IdAndDay(habitId, date);
     }
@@ -177,7 +175,7 @@ public class HabitService {
         };
     }
 
-    private HabitDto toDto(HabitEntity entity) {
+    public HabitDto toDto(HabitEntity entity) {
         return new HabitDto(
                 entity.getId(),
                 entity.getTitle(),
