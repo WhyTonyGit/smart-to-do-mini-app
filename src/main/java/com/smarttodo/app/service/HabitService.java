@@ -92,7 +92,7 @@ public class HabitService {
                 .filter(habit -> isHabitDueToday(habit, today))
                 .map(habit -> {
                     boolean isCompleted = isHabitCompletedForDate(habit.getId(), today);
-                    return toCheckinDto(habit, today, isCompleted);
+                    return toCheckinDto(habit, today, isCompleted, isCompleted); // второй isCompleted - заглушка на isCompletedOnTime
                 })
                 .toList();
     }
@@ -107,7 +107,7 @@ public class HabitService {
                         .filter(day -> isHabitDueToday(habit, day))
                         .map(day -> {
                             boolean isCompleted = isHabitCompletedForDate(habit.getId(), day);
-                            return toCheckinDto(habit, day, isCompleted);
+                            return toCheckinDto(habit, day, isCompleted, isCompleted); // второй isCompleted - заглушка isCompletedOnTime
                         })
                 )
                 .toList();
@@ -253,7 +253,7 @@ public class HabitService {
         );
     }
 
-    private HabitCheckinDto toCheckinDto(HabitEntity habit, LocalDate day, boolean isCompleted) {
+    private HabitCheckinDto toCheckinDto(HabitEntity habit, LocalDate day, boolean isCompleted, boolean isCompletedOnTime) {
         return new HabitCheckinDto(
                 habit.getId(),
                 habit.getTitle(),
@@ -263,7 +263,8 @@ public class HabitService {
                 habit.getPriority(),
                 day,
                 habit.getGoalDate(),
-                isCompleted
+                isCompleted,
+                isCompletedOnTime
         );
     }
 }
