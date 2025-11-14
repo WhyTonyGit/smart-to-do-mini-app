@@ -91,8 +91,8 @@ public class HabitService {
         return habitRepository.findAllByChatId(chatId).stream()
                 .filter(habit -> isHabitDueToday(habit, today))
                 .map(habit -> {
-                    boolean completedOnTime = isHabitCompletedForDate(habit.getId(), today);
-                    return toCheckinDto(habit, today, completedOnTime);
+                    boolean isCompleted = isHabitCompletedForDate(habit.getId(), today);
+                    return toCheckinDto(habit, today, isCompleted);
                 })
                 .toList();
     }
@@ -106,8 +106,8 @@ public class HabitService {
                 .flatMap(habit -> start.datesUntil(end.plusDays(1))
                         .filter(day -> isHabitDueToday(habit, day))
                         .map(day -> {
-                            boolean completedOnTime = isHabitCompletedForDate(habit.getId(), day);
-                            return toCheckinDto(habit, day, completedOnTime);
+                            boolean isCompleted = isHabitCompletedForDate(habit.getId(), day);
+                            return toCheckinDto(habit, day, isCompleted);
                         })
                 )
                 .toList();
@@ -116,14 +116,14 @@ public class HabitService {
     @Transactional(readOnly = true)
     public List<HabitCheckinDto> getUncompletedHabitsForToday(Long chatId) {
         return getHabitsForToday(chatId).stream()
-                .filter(habit -> !habit.completedOnTime())
+                .filter(habit -> !habit.isCompleted())
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<HabitCheckinDto> getUncompletedHabitsForWeek(Long chatId) {
         return getHabitsForWeek(chatId).stream()
-                .filter(habit -> !habit.completedOnTime())
+                .filter(habit -> !habit.isCompleted())
                 .toList();
     }
 
@@ -253,7 +253,7 @@ public class HabitService {
         );
     }
 
-    private HabitCheckinDto toCheckinDto(HabitEntity habit, LocalDate day, boolean completedOnTime) {
+    private HabitCheckinDto toCheckinDto(HabitEntity habit, LocalDate day, boolean isCompleted) {
         return new HabitCheckinDto(
                 habit.getId(),
                 habit.getTitle(),
@@ -262,7 +262,8 @@ public class HabitService {
                 habit.getInterval(),
                 habit.getPriority(),
                 day,
-                completedOnTime
+                habit.getGoalDate(),
+                isCompleted
         );
     }
 }

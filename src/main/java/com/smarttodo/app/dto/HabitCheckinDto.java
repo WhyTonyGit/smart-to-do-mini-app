@@ -14,7 +14,8 @@ public record HabitCheckinDto(
         HabitInterval interval,
         Priority priority,
         LocalDate day,
-        boolean completedOnTime
+        LocalDate goalDate,
+        boolean isCompleted
 ) {
     public HabitCheckinDto {
         if (title == null || title.isBlank()) {
