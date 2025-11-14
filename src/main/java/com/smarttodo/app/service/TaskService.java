@@ -29,7 +29,7 @@ public class TaskService {
 
         TaskEntity task = new TaskEntity(user, createTaskDto.title(), chatId);
         task.setDescription(createTaskDto.description());
-        task.setStatus(TaskStatus.NEW);
+        task.setStatus(TaskStatus.UNCOMPLETED);
         task.setPriority(createTaskDto.priority());
         task.setDeadline(createTaskDto.deadline());
 
@@ -43,7 +43,7 @@ public class TaskService {
                 .orElseThrow(() -> new IllegalArgumentException("Не найдена задача с id: " + taskId));;
         task.setStatus(newStatus);
 
-        if (newStatus == TaskStatus.DONE) {
+        if (newStatus == TaskStatus.COMPLETED) {
             task.setCompletedAt(Instant.now());
         } else {
             task.setCompletedAt(null);
@@ -54,17 +54,17 @@ public class TaskService {
 
     @Transactional
     public void markTaskAsCompleted(Long taskId) {
-        updateTaskStatus(taskId, TaskStatus.DONE);
+        updateTaskStatus(taskId, TaskStatus.COMPLETED);
     }
 
     @Transactional
     public void markTaskAsInProgress(Long taskId) {
-        updateTaskStatus(taskId, TaskStatus.DONE);
+        updateTaskStatus(taskId, TaskStatus.IN_PROGRESS);
     }
 
     @Transactional
     public void markTaskAsUncompleted(Long taskId) {
-        updateTaskStatus(taskId, TaskStatus.IN_PROGRESS);
+        updateTaskStatus(taskId, TaskStatus.UNCOMPLETED);
     }
 
 
@@ -79,6 +79,17 @@ public class TaskService {
     public List<TaskDto> getAllTasksForToday(Long chatId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
+        return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfDay, endOfDay).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<TaskDto> getAllTasksForTomorrow(Long chatId) {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        LocalDateTime startOfDay = tomorrow.atStartOfDay();
+        LocalDateTime endOfDay = tomorrow.atTime(LocalTime.MAX);
 
         return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfDay, endOfDay).stream()
                 .map(this::toDto)
@@ -101,7 +112,7 @@ public class TaskService {
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
         return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfDay, endOfDay).stream()
-                .filter(task -> task.getStatus() != TaskStatus.DONE)
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -112,7 +123,7 @@ public class TaskService {
         LocalDateTime endOfWeek = startOfWeek.plusDays(7).with(LocalTime.MAX);
 
         return taskRepository.findAllByChatIdAndDeadlineBetween(chatId, startOfWeek, endOfWeek).stream()
-                .filter(task -> task.getStatus() != TaskStatus.DONE)
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -139,7 +150,7 @@ public class TaskService {
         return taskRepository.findAllByChatId(chatId).stream()
                 .filter(task -> task.getDeadline() != null &&
                         task.getDeadline().isBefore(now) &&
-                        task.getStatus() != TaskStatus.DONE)
+                        task.getStatus() != TaskStatus.COMPLETED)
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }

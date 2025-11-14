@@ -27,6 +27,11 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("Не найден юзер с id чата: " + chatId));
     }
 
+    @Transactional(readOnly = true)
+    public boolean iSUserExists(Long userId) {
+        return userRepository.existsById(userId);
+    }
+
     @Transactional
     public UserEntity createUser(Long id, Long chatId, String displayName) {
         if (userRepository.existsById(id)) {
