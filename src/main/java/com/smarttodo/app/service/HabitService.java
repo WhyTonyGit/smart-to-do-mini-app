@@ -12,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @Service
@@ -24,10 +26,10 @@ public class HabitService {
     private final UserService userService;
 
     @Transactional
-    public HabitDto createHabit(Long userId, HabitDto createHabitDto) {
-        UserEntity user = userService.getUserByChatId(userId);
+    public HabitDto createHabit(Long chatId, HabitDto createHabitDto) {
+        UserEntity user = userService.getUserByChatId(chatId);
 
-        HabitEntity habit = new HabitEntity(user, createHabitDto.title());
+        HabitEntity habit = new HabitEntity(chatId, user, createHabitDto.title());
         habit.setDescription(createHabitDto.description());
         habit.setStatus(HabitStatus.ARCHIVED);
         habit.setInterval(createHabitDto.interval());
@@ -52,46 +54,67 @@ public class HabitService {
         updateHabitStatus(habitId, HabitStatus.ARCHIVED);
     }
 
+    @Transactional
+    public void markHabitAsInProgress(Long habitId) {
+        updateHabitStatus(habitId, HabitStatus.IN_PROGRESS);
+    }
+
+    @Transactional
+    public void markHabitAsPaused(Long habitId) {
+        updateHabitStatus(habitId, HabitStatus.PAUSED);
+    }
+
+    @Transactional
+    public void markHabitAsCompleted(Long habitId) {
+        updateHabitStatus(habitId, HabitStatus.COMPLETED);
+    }
+
     @Transactional(readOnly = true)
-    public List<HabitDto> getAllHabits(Long userId) {
-        return habitRepository.findAllByUser_Id(userId).stream()
+    public HabitDto getHabitById(Long habitId) {
+        HabitEntity habit = habitRepository.findById(habitId)
+                .orElseThrow(() -> new IllegalArgumentException("Не найдена привычка с id: " + habitId));
+        return toDto(habit);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HabitDto> getAllHabits(Long chatId) {
+        return habitRepository.findAllByChatId(chatId).stream()
                 .map(this::toDto)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<HabitDto> getHabitForToday(Long userId) {
+    public List<HabitDto> getHabitsForToday(Long chatId) {
         LocalDate today = LocalDate.now();
-        return habitRepository.findAllByUser_Id(userId).stream()
+        return habitRepository.findAllByChatId(chatId).stream()
                 .filter(habit -> isHabitDueToday(habit, today))
                 .map(this::toDto)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<HabitDto> getHabitForWeek(Long userId) {
+    public List<HabitDto> getHabitsForWeek(Long chatId) {
         LocalDate today = LocalDate.now();
         LocalDate weekEnd = today.plusDays(7);
 
-        return habitRepository.findAllByUser_Id(userId).stream()
+        return habitRepository.findAllByChatId(chatId).stream()
                 .filter(habit -> isHabitDueInPeriod(habit, today, weekEnd))
                 .map(this::toDto)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<HabitDto> getUncompletedHabitsForToday(Long userId) {
-        return getHabitForToday(userId).stream()
+    public List<HabitDto> getUncompletedHabitsForToday(Long chatId) {
+        return getHabitsForToday(chatId).stream()
                 .filter(habit -> !isHabitCompletedForDate(habit.id(), LocalDate.now()))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<HabitDto> getUncompletedHabitsForWeek(Long userId) {
+    public List<HabitDto> getUncompletedHabitsForWeek(Long chatId) {
         LocalDate today = LocalDate.now();
-        LocalDate weekEnd = today.plusDays(7);
 
-        return getHabitForWeek(userId).stream()
+        return getHabitsForWeek(chatId).stream()
                 .filter(habit -> {
                     LocalDate habitDate = getNextDueDate(habit, today);
                     return !isHabitCompletedForDate(habit.id(), habitDate);
@@ -100,15 +123,17 @@ public class HabitService {
     }
 
     @Transactional
-    public void updateHabitInterval(Long userId, Long habitId, HabitInterval newInterval) {
-        HabitEntity habit = getHabitByIdAndUserId(habitId, userId);
+    public void updateHabitInterval(Long habitId, HabitInterval newInterval) {
+        HabitEntity habit = habitRepository.findById(habitId)
+                .orElseThrow(() -> new IllegalArgumentException("Не найдена привычка с id: " + habitId));
         habit.setInterval(newInterval);
         habitRepository.save(habit);
     }
 
     @Transactional(readOnly = true)
-    public HabitInterval getHabitInterval(Long userId, Long habitId) {
-        HabitEntity habit = getHabitByIdAndUserId(habitId, userId);
+    public HabitInterval getHabitInterval(Long habitId) {
+        HabitEntity habit = habitRepository.findById(habitId)
+                .orElseThrow(() -> new IllegalArgumentException("Не найдена привычка с id: " + habitId));
         return habit.getInterval();
     }
 
@@ -123,17 +148,6 @@ public class HabitService {
 
         HabitCheckinEntity checkin = new HabitCheckinEntity(habit, date);
         habitCheckinRepository.save(checkin);
-    }
-
-    private HabitEntity getHabitByIdAndUserId(Long habitId, Long userId) {
-        HabitEntity habit = habitRepository.findById(habitId)
-                .orElseThrow(() -> new IllegalArgumentException("Не найдена привычка с id: " + habitId));
-
-        if (!habit.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Привычка не принадлежит юзеру");
-        }
-
-        return habit;
     }
 
     private boolean isHabitDueToday(HabitEntity habit, LocalDate today) {
@@ -151,9 +165,16 @@ public class HabitService {
         return habitCheckinRepository.existsByHabit_IdAndDay(habitId, date);
     }
 
-    // Тут ещё нет механизма интервала привычки, надо потом это говно доделать
     private LocalDate getNextDueDate(HabitDto habit, LocalDate fromDate) {
-        return fromDate;
+        if (habit.interval() == null) {
+            return fromDate;
+        }
+
+        return switch (habit.interval()) {
+            case EVERY_DAY -> fromDate;
+            case EVERY_WEEK -> fromDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+            case EVERY_MONTH -> fromDate.with(TemporalAdjusters.firstDayOfNextMonth());
+        };
     }
 
     private HabitDto toDto(HabitEntity entity) {

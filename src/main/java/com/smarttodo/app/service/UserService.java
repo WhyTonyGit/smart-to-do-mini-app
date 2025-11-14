@@ -28,17 +28,16 @@ public class UserService {
     }
 
     @Transactional
-    public boolean isUserExists(Long userId) {
-        return userRepository.findById(userId).isPresent();
-    }
+    public UserEntity createUser(Long id, Long chatId, String displayName) {
+        if (userRepository.existsById(id)) {
+            throw new IllegalArgumentException("Юзер с id уже существует: " + id);
+        }
 
-    @Transactional
-    public UserEntity createUser(Long userId, Long chatId, String displayName) {
-        if (userRepository.existsById(userId)) {
+        if (userRepository.existsByChatId(chatId)) {
             throw new IllegalArgumentException("Юзер с таким id чата уже существует: " + chatId);
         }
 
-        UserEntity user = new UserEntity(userId, chatId);
+        UserEntity user = new UserEntity(id, chatId);
         user.setDisplayName(displayName);
         return userRepository.save(user);
     }

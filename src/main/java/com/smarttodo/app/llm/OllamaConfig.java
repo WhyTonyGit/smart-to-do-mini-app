@@ -54,14 +54,10 @@ public class OllamaConfig {
     }
 
     private static ExchangeFilterFunction logResp() {
-        return ExchangeFilterFunction.ofResponseProcessor(resp -> resp.bodyToMono(String.class)
-                .defaultIfEmpty("")
-                .flatMap(body -> {
-                    var log = LoggerFactory.getLogger("OllamaApi");
-                    log.info("OLLAMA <== {} {}\n{}", resp.statusCode().value(), resp.statusCode(), body);
-                    return Mono.just(org.springframework.web.reactive.function.client.ClientResponse.create(resp.statusCode())
-                            .headers(h -> h.addAll(resp.headers().asHttpHeaders()))
-                            .body(body).build());
-                }));
+        return ExchangeFilterFunction.ofResponseProcessor(resp -> {
+            var log = LoggerFactory.getLogger("OllamaApi");
+            log.info("OLLAMA <== {} {}", resp.statusCode().value(), resp.statusCode());
+            return Mono.just(resp);
+        });
     }
 }
