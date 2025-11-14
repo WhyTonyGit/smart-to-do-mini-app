@@ -67,6 +67,7 @@ public class TaskService {
         updateTaskStatus(taskId, TaskStatus.IN_PROGRESS);
     }
 
+
     @Transactional(readOnly = true)
     public List<TaskDto> getAllTasks(Long chatId) {
         return taskRepository.findAllByChatId(chatId).stream()

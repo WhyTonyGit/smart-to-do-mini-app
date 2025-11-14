@@ -1,3 +1,4 @@
+
 package com.smarttodo.app.llm.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
