@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smarttodo.app.client.MaxApi;
 import com.smarttodo.app.dto.MessageMeta;
 import com.smarttodo.app.entity.Update;
-import com.smarttodo.app.llm.NlpService;
+import com.smarttodo.app.llm.task.NlpService;
 import com.smarttodo.app.repository.LastActionRedisRepo;   // <-- синхронный репозиторий
 import com.smarttodo.app.service.HabitService;
 import com.smarttodo.app.service.TaskService;
