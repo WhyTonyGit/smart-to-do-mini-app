@@ -213,11 +213,9 @@ public class HabitService {
             case EVERY_SATURDAY -> dayOfWeek == DayOfWeek.SATURDAY;
         };
     }
-
     private boolean isHabitDueInPeriod(HabitEntity habit, LocalDate start, LocalDate end) {
         return start.datesUntil(end.plusDays(1)).anyMatch(day -> isHabitDueToday(habit, day));
     }
-
     private boolean isHabitCompletedForDate(Long habitId, LocalDate date) {
         return habitCheckinRepository.existsByHabit_IdAndDay(habitId, date);
     }
@@ -259,7 +257,7 @@ public class HabitService {
         };
     }
 
-    private HabitDto toDto(HabitEntity entity) {
+    public HabitDto toDto(HabitEntity entity) {
         return new HabitDto(
                 entity.getId(),
                 entity.getTitle(),
