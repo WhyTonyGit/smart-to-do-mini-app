@@ -1,0 +1,133 @@
+Smart Todo List – Requirements
+==============================
+
+1. Среда выполнения
+-------------------
+
+- Язык: Java 21
+- JDK: Oracle JDK 21 / OpenJDK 21
+- Система сборки: Apache Maven 3.9+ (проект основан на pom.xml)
+- Spring Boot:
+  - org.springframework.boot:spring-boot-starter-parent:3.4.11
+
+2. Инфраструктура
+-----------------
+
+Для работы приложения требуются внешние сервисы:
+
+- PostgreSQL (сервер БД)
+  - Драйвер: org.postgresql:postgresql (scope: runtime)
+
+- Redis
+  - Используется для кэша и временного хранения данных (Spring Data Redis)
+
+- HTTP-сервер / контейнер сервлетов:
+  - Входит в состав Spring Boot (embedded Tomcat, поднимается автоматически)
+
+3. Основные зависимости backend (Maven)
+---------------------------------------
+
+Все зависимости заданы в pom.xml и управляются spring-boot-starter-parent:3.4.11,
+если версия не указана явно.
+
+Обязательные зависимости:
+
+- org.springframework.boot:spring-boot-starter-web
+  REST-контроллеры, веб-слой (Spring MVC, embedded Tomcat)
+
+- org.springframework.boot:spring-boot-starter-webflux
+  Реактивный WebClient и реактивные компоненты
+
+- org.springframework.boot:spring-boot-starter-data-jpa
+  Работа с БД через Spring Data JPA и Hibernate
+
+- org.springframework.boot:spring-boot-starter-data-redis
+  Подключение к Redis (кэш, временные структуры данных)
+
+- org.flywaydb:flyway-core
+  Миграции базы данных (управление схемой БД)
+
+- org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14
+  Автогенерация OpenAPI/Swagger-документации и Swagger UI
+
+Библиотеки для работы с БД и утилиты:
+
+- org.postgresql:postgresql (scope: runtime)
+  JDBC-драйвер PostgreSQL
+
+- org.projectlombok:lombok (optional)
+  Генерация геттеров/сеттеров, конструкторов и пр. через аннотации
+
+4. Зависимости для разработки
+-----------------------------
+
+- org.springframework.boot:spring-boot-devtools (scope: runtime, optional)
+  Автоматический рестарт приложения при изменении кода, удобства разработки
+
+- org.projectlombok:lombok
+  Используется как аннотационный процессор (настроен в maven-compiler-plugin)
+
+5. Зависимости для тестирования
+-------------------------------
+
+- org.springframework.boot:spring-boot-starter-test (scope: test)
+  Набор для тестов: JUnit, AssertJ, Spring Test и т.д.
+
+6. Maven-плагины
+----------------
+
+- org.apache.maven.plugins:maven-compiler-plugin
+  - Конфигурация компиляции под нужную версию Java
+  - Подключение Lombok как annotation processor
+
+- org.springframework.boot:spring-boot-maven-plugin
+  - Сборка исполняемого JAR (`app.jar`)
+  - Исключение Lombok из финального артефакта
+
+7. Интеграция с локальной LLM (Ollama)
+--------------------------------------
+
+Приложение использует локальный сервер Ollama для двух функций:
+
+1) NLP-парсер задач
+   - Сервис: NlpService / NlpController (`POST /nlp`)
+   - Назначение: преобразовать русскоязычный текст пользователя
+     (например: "Завтра в 19:00 выпить сок") в структурированный JSON
+     со списком задач (title, description, datetime, priority, splitOf).
+   - В коде используется метод OllamaClient.chatExtractJson(systemPrompt, userPrompt),
+     который обращается к эндпоинту Ollama `/api/chat` и парсит ответ в DTO ParseResult.
+
+2) Мотивационные сообщения
+   - Сервис: MotivationService / MotivationController (`POST /.../message`)
+   - Назначение: на основе длины серии (streak дней) сгенерировать
+     краткую мотивационную реплику на русском.
+   - В коде используется метод OllamaClient.chatText(systemPrompt, userPrompt),
+     который перефразирует базовую фразу ("Ты молодец, держишься уже X дней...").
+
+Технические требования к Ollama:
+
+- Установленный и запущенный сервер Ollama
+  - пример базового URL: `http://localhost:11434` или `http://ollama:11434`
+  - настраивается через конфигурационные свойства:
+
+    - `ollama.api.base-url`         — адрес сервера Ollama
+    - `ollama.api.model`            — имя модели (например, `llama3`)
+    - `ollama.api.timeout-seconds`  — таймаут запросов в секундах
+
+- Как минимум одна универсальная языковая модель, способная:
+  - понимать русский язык;
+  - соблюдать инструкции по формату (строгий JSON для парсера задач);
+  - генерировать связанный текст.
+  Примеры: `llama3`, `llama3.1` или аналогичная модель,
+  предварительно загруженная командой вида:
+  - `ollama pull llama3`
+
+- Взаимодействие с моделью:
+  - через Spring WebClient `ollamaWebClient` (бин из OllamaConfig);
+  - HTTP POST-запросы на `/api/chat`, стриминговый ответ в формате NDJSON;
+  - для NLP-парсинга используется строгий системный промпт на русском,
+    описывающий требуемую JSON-структуру.
+
+Без запущенного Ollama и настроенной модели функционал парсинга естественного языка
+и мотивационных сообщений будет недоступен.
+
