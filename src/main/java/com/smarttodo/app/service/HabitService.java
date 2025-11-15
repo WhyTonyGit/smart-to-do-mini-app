@@ -124,6 +124,21 @@ public class HabitService {
     }
 
     @Transactional(readOnly = true)
+    public long getCompletedHabitsCountForWeek(Long chatId) {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
+        return habitRepository.findAllByChatId(chatId).stream()
+                .mapToLong(habit -> getHabitCompletionsInPeriod(habit.getId(), weekStart, weekEnd))
+                .sum();
+    }
+
+    private long getHabitCompletionsInPeriod(Long habitId, LocalDate start, LocalDate end) {
+        return habitCheckinRepository.findAllByHabit_IdAndDayBetween(habitId, start, end).size();
+    }
+
+    @Transactional(readOnly = true)
     public List<HabitCheckinDto> getUncompletedHabitsForToday(Long chatId) {
         return getHabitsForToday(chatId).stream()
                 .filter(habit -> !habit.isCompleted())
