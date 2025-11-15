@@ -4,9 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum TaskStatus {
-    NEW("❌", "Выполнение не начато"),
-    IN_PROGRESS("⏳", "В процессе"),
-    DONE("✅", "Выполнено");
+    UNCOMPLETED("❌", "Выполнение не начато"),
+    IN_PROGRESS("🔄", "В процессе"),
+    COMPLETED("✅", "Выполнено");
 
     private final String emoji;
     private final String description;

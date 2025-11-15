@@ -33,6 +33,7 @@ public class UpdateRouter {
     private final HabitService habitService;
     private final LastActionRedisRepo lastActionRepo;// <-- заменили тип
     private final TaskManager taskManager;
+    private final HabitManager habitManager;
 
     /** Главная точка входа: вызывается контроллером вебхука */
     public void dispatch(String rawJson) {
@@ -66,20 +67,18 @@ public class UpdateRouter {
         // Команда /start
         if (u.isTextCommand("/start")) {
             log.info("ROUTE: /start for chatId={}", u.chatId());
-            if (!userService.isUserExists(u.userId())) {
+            if (!userService.iSUserExists(u.userId())) {
                 userService.createUser(u.userId(), u.chatId(), null);
             }
             messageSender.sendStartKeyboard(u.chatId());
             return;
         }
 
-        // Обычный текст
         if (u.isText()) {
             log.info("ROUTE: handle text, chatId={}", u.chatId());
 
             Optional<MessageMeta> opt = lastActionRepo.get(u.chatId());
             MessageMarker marker = opt.map(MessageMeta::marker).orElse(null);
-            String mid = opt.map(MessageMeta::mid).orElse(null);
             log.debug("Redis marker for chatId={} -> {}", u.chatId(), marker);
 
             if (marker == null) {
@@ -109,6 +108,22 @@ public class UpdateRouter {
 
                     taskManager.changeTaskDeadline(u);
                 }
+                case CHANGE_HABIT_TITLE -> {
+                    log.info("Marker=CHANGE_HABIT_TITLE -> creating habit flow, chatId={}", u.chatId());
+                    habitManager.changeHabitTitle(u);
+                }
+                case CHANGE_HABIT_DESCRIPTION -> {
+                    log.info("Marker=CHANGE_HABIT_DESCRIPTION -> creating habit flow, chatId={}", u.chatId());
+                    habitManager.changeHabitDescription(u);
+                }
+                case CHANGE_HABIT_INTERVAL -> {
+                    log.info("Marker=CHANGE_HABIT_INTERVAL -> creating habit flow, chatId={}", u.chatId());
+                    habitManager.changeHabitInterval(u);
+                }
+                case CHANGE_HABIT_GOAL_DATE -> {
+                    log.info("Marker=CHANGE_HABIT_GOAL_DATE -> creating habit flow, chatId={}", u.chatId());
+                    habitManager.changeHabitGoalDate(u);
+                }
                 default -> {
                     log.info("Unknown marker={} -> fallback, chatId={}", marker, u.chatId());
                     messageSender.sendText(u.chatId(), "Нераспознанный контекст");
@@ -117,69 +132,56 @@ public class UpdateRouter {
             return;
         }
 
-        // Callback-кнопки
         if (u.isCallback()) {
             log.info("ROUTE: handle callback, chatId={}, userId={}, payload={}", u.chatId(), u.userId(), u.getPayload());
 
-            if (Objects.equals(u.getPayload().split(":")[0], "tasks-id")) {
-                taskManager.pickTask(u);
+            Payload payload = Payload.from(u.getPayload());
+            if (payload == null) {
+                log.error("Unknown task payload: {}", u.getPayload());
                 return;
             }
 
-            switch (u.getPayload()) {
-                case "tasks-handler" -> messageSender.sendTaskKeyboard(u.chatId());
-                case "habit-handler" -> messageSender.sendText(u.chatId(), "Пока в разработке.");
-                case "notification-handler" -> messageSender.sendText(u.chatId(), "Пока в разработке..");
-                case "tasks-create-new" -> taskManager.createTask(u);
-                case "tasks-change-title" -> messageSender.sendInputTaskTitle(u.chatId());
-                case "tasks-change-description" -> messageSender.sendInputTaskDescription(u.chatId());
-                case "tasks-change-deadline" -> messageSender.sendInputTaskDeadline(u.chatId());
-                case "tasks-create-confirm" -> taskManager.confirmTaskCreating(u);
-                case "tasks-get-today" -> taskManager.getTodayTaskList(u);
-                case "tasks-get-week" -> taskManager.getWeekTaskList(u);
-                case "tasks-get-all" -> taskManager.getAllTaskList(u);
-                case "home-page" -> messageSender.sendHomePageKeyboard(u.chatId());
-                default -> messageSender.sendText(u.chatId(), "Произошла ошибка на сервере, приносим свои извинения.");
+            log.info("Checking payload {} hasId: {}", u.getPayload(), payload.hasId());
+            if (payload.hasId()) {
+                if (payload.isTasksPayload()) {
+                    taskManager.pickTask(u);
+                    return;
+                }
+                if (payload.isHabitsPayload()) {
+                    habitManager.pickHabit(u);
+                    return;
+                }
+            }
+
+            switch (payload) {
+                case TASK_MENU -> messageSender.sendTaskKeyboard(u.chatId());
+                case TASKS_CREATE_NEW -> taskManager.createTask(u);
+                case TASKS_CHANGE_TITLE -> messageSender.sendInputTaskTitle(u.chatId());
+                case TASKS_CHANGE_DESCRIPTION -> messageSender.sendInputTaskDescription(u.chatId());
+                case TASKS_CHANGE_DEADLINE -> messageSender.sendInputTaskDeadline(u.chatId());
+                case TASKS_CREATE_CONFIRM -> taskManager.confirmTaskCreating(u);
+                case TASKS_GET_TODAY -> taskManager.getTodayTaskList(u);
+                case TASKS_GET_WEEK -> taskManager.getWeekTaskList(u);
+                case TASKS_GET_ALL -> taskManager.getAllTaskList(u);
+                case TASKS_GET_TOMORROW -> taskManager.getTomorrowTaskList(u);
+
+                case HABIT_MENU -> messageSender.sendHabitKeyboard(u.chatId());
+                case HABITS_CREATE_NEW -> habitManager.createHabit(u);
+                case HABITS_CHANGE_TITLE ->  messageSender.sendHabitTitleInput(u.chatId());
+                case HABITS_CHANGE_DESCRIPTION ->   messageSender.sendHabitDescriptionInput(u.chatId());
+                case HABITS_CHANGE_INTERVAL ->   messageSender.sendHabitIntervalInput(u.chatId());
+                case HABITS_CHANGE_GOAL_DATE ->   messageSender.sendHabitGoalDateInput(u.chatId());
+                case HABITS_GET_ALL -> habitManager.getAllHabitsList(u);
+                case HABITS_GET_TODAY -> habitManager.getTodayHabitsList(u);
+                case HABITS_GET_WEEK -> habitManager.getWeekHabitsList(u);
+                case HABITS_CREATE_CONFIRM ->  habitManager.confirmHabitCreating(u);
+
+                case HOME_PAGE -> messageSender.sendHomePageKeyboard(u.chatId());
+
+                default -> messageSender.sendText(u.chatId(), "Ошибка");
             }
             return;
         }
-
-        // тут llm (оставляю как в твоём варианте; при необходимости тоже переведем на императивный вызов)
-//        if (u.isType("message_created") && u.getMessage() != null) {
-//            var body = u.getMessage().getBody();
-//            var text = body != null ? body.getText() : null;
-//            if (text != null && !text.isBlank()) {
-//                try {
-//                    var parsed = nlp.parseText(text).block(java.time.Duration.ofSeconds(12));
-//                    if (parsed == null || parsed.tasks() == null || parsed.tasks().isEmpty()) {
-//                        messageSender.sendText(u.chatId(), "Не смог разобрать задачу. Сформулируй чуть яснее?");
-//                        return;
-//                    }
-//                    var sb = new StringBuilder("Разобрал так:\n");
-//                    int i = 1;
-//                    for (var t : parsed.tasks()) {
-//                        sb.append(i++).append(". ")
-//                                .append(t.title() != null ? t.title() : "—");
-//                        if (t.description() != null && !t.description().isBlank()) {
-//                            sb.append(" (").append(t.description()).append(")");
-//                        }
-//                        if (t.date() != null || t.time() != null) {
-//                            sb.append(" — ");
-//                            if (t.date() != null) sb.append(t.date());
-//                            if (t.date() != null && t.time() != null) sb.append(" ");
-//                            if (t.time() != null) sb.append(t.time());
-//                        }
-//                        if (t.splitOf() != null) sb.append(" [группа ").append(t.splitOf()).append("]");
-//                        sb.append("\n");
-//                    }
-//                    messageSender.sendText(u.chatId(), sb.toString());
-//                    return;
-//                } catch (Exception e) {
-//                    messageSender.sendText(u.chatId(), "Упс, модель не ответила вовремя. Попробуем ещё раз позже.");
-//                    return;
-//                }
-//            }
-//        }
 
         log.info("Unhandled update_type={} eventId={}", u.getUpdateType(), u.getEventId());
     }

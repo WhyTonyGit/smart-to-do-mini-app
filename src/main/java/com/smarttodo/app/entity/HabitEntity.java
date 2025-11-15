@@ -49,8 +49,8 @@ public class HabitEntity {
     private HabitInterval interval = HabitInterval.EVERY_DAY;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "priority", nullable = false, length = 32)
-    private Priority priority = Priority.MEDIUM;
+    @Column(name = "priority", length = 32)
+    private Priority priority = Priority.LOW;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
