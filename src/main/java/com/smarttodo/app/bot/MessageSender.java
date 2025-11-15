@@ -4,6 +4,7 @@ import com.smarttodo.app.client.MaxApi;
 import com.smarttodo.app.dto.*;
 import com.smarttodo.app.entity.HabitInterval;
 import com.smarttodo.app.entity.TaskStatus;
+import com.smarttodo.app.llm.motivation.MotivationService;
 import com.smarttodo.app.repository.LastActionRedisRepo;
 import com.smarttodo.app.service.HabitService;
 import com.smarttodo.app.service.MetricsService;
@@ -26,6 +27,8 @@ public class MessageSender {
     private final MaxApi maxApi;        // postMessage возвращает Mono<SendMessageResult>
     private final LastActionRedisRepo lastRepo;   // синхронный репозиторий
     private final MetricsService metricsService;
+
+    private final MotivationService motivationService;
 
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
     private static final Retry RETRY_5XX_OR_NETWORK = Retry

@@ -67,32 +67,32 @@ public class ReminderService {
         return taskDtos;
     }
 
-    public List<TaskDto> sendTasksAndHabitsForToday() {
-        List<TaskDto> todayTasks = taskRepository.findAll().stream()
-                .filter(task -> task.getDeadline() != null)
-                .filter(task -> {
-                    LocalDateTime deadline = task.getDeadline();
-                    LocalDateTime todayStart = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
-                    LocalDateTime tomorrowStart = todayStart.plusDays(1);
-                    return deadline.isAfter(todayStart) && deadline.isBefore(tomorrowStart);
-                })
-                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
-                .map(this::toTaskDto)
-                .collect(Collectors.toList());
-
-        List<HabitEntity> todayHabits = habitRepository.findAll().stream()
-                .filter(habit -> habitService.isHabitDueToday(habit, LocalDate.now()))
-                .toList();
-
-        List<HabitDto> habitDtos = todayHabits.stream()
-                .map(habitService::toDto)
-                .collect(Collectors.toList());
-
-//        messageSender.sendTodayTasksList(todayTasks);
-//        messageSender.sendTodayHabitsList(habitDtos);
-
-        return todayTasks;
-    }
+//    public List<TaskDto> sendTasksAndHabitsForToday() {
+//        List<TaskDto> todayTasks = taskRepository.findAll().stream()
+//                .filter(task -> task.getDeadline() != null)
+//                .filter(task -> {
+//                    LocalDateTime deadline = task.getDeadline();
+//                    LocalDateTime todayStart = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+//                    LocalDateTime tomorrowStart = todayStart.plusDays(1);
+//                    return deadline.isAfter(todayStart) && deadline.isBefore(tomorrowStart);
+//                })
+//                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
+//                .map(this::toTaskDto)
+//                .collect(Collectors.toList());
+//
+//        List<HabitEntity> todayHabits = habitRepository.findAll().stream()
+//                .filter(habit -> habitService.isHabitDueToday(habit, LocalDate.now()))
+//                .toList();
+//
+//        List<HabitDto> habitDtos = todayHabits.stream()
+//                .map(habitService::toDto)
+//                .collect(Collectors.toList());
+//
+//        messageSender.sendTodayTaskList(chatId, todayTasks);
+//        messageSender.sendTodayHabitsList(chatId, habitDtos);
+//
+//        return todayTasks;
+//    }
 
     private TaskDto toTaskDto(TaskEntity entity) {
         return new TaskDto(
