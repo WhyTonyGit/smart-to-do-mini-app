@@ -35,5 +35,3 @@ build/
 # Local secrets (не коммитим)
 ../secrets/
 ../secrets/**
-.env
-secrets-max.env
