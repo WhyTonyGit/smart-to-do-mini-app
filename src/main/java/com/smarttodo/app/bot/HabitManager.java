@@ -111,6 +111,10 @@ public class HabitManager {
                 habitRedisRepo.save(u.chatId(), habit);
                 messageSender.sendHabitGoalDateInput(habit.id());
             }
+            case HABITS_DELETE -> {
+                habitService.deleteHabitById(habit.id());
+                messageSender.sendText(u.chatId(), "Привычка удалена");
+            }
         }
     }
 

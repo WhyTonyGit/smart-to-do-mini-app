@@ -353,6 +353,7 @@ public class MessageSender {
                 .addCallbackButton("Отметить взятой в работу",  Payload.TASKS_SET_STATUS_IN_PROGRESS.key() + ":" + task.id())
                 .addCallbackButton("Отметить выполненной",   Payload.TASKS_SET_STATUS_COMPLETED.key() + ":" + task.id())
                 .addCallbackButton("Удалить задачу",         Payload.TASKS_DELETE.key() + ":" + task.id())
+                .addCallbackButton("➕ Создать новую задачу", Payload.TASKS_CREATE_NEW.key())
                 .addCallbackButton("🗓️ Меню привычек",        Payload.HABIT_MENU.key())
                 .addCallbackButton("📋 Меню задач",        Payload.TASK_MENU.key())
                 .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key())
@@ -424,6 +425,8 @@ public class MessageSender {
         body.addCallbackButton("Поставить статус: завершена", Payload.HABITS_SET_STATUS_ARCHIVED.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("Поставить статус: в процессе", Payload.HABITS_SET_STATUS_IN_PROGRESS.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("Поставить статус: приостановлена", Payload.HABITS_SET_STATUS_PAUSED.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("Удалить привычку", Payload.HABITS_DELETE.key() + ":%s".formatted(habit.id()))
+                .addCallbackButton("➕ Создать новую привычку",    Payload.HABITS_CREATE_NEW.key())
                 .addCallbackButton("🗓️ Меню привычек",        Payload.HABIT_MENU.key())
                 .addCallbackButton("📋 Меню задач",        Payload.TASK_MENU.key())
                 .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key());

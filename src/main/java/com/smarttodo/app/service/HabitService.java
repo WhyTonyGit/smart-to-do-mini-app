@@ -145,6 +145,11 @@ public class HabitService {
                 .toList();
     }
 
+    @Transactional
+    public void deleteHabitById(Long id) {
+        habitRepository.deleteById(id);
+    }
+
     @Transactional(readOnly = true)
     public List<HabitCheckinDto> getUncompletedHabitsForWeek(Long chatId) {
         return getHabitsForWeek(chatId).stream()

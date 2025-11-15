@@ -17,6 +17,7 @@ public enum Payload {
     TASKS_GET_TOMORROW("tasks-get-tomorrow"),
 
     HABITS_GET_ALL("habits-get-all"),
+    HABITS_DELETE("habits-delete"),
     HABITS_GET_TODAY("habits-get-today"),
     HABITS_GET_WEEK("habits-get-week"),
     HABITS_STREAKS("habits-streaks"),
