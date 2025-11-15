@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum HabitStatus {
-    ARCHIVED("📦", "окончена"),
+    ARCHIVED("📦", "не взята в работу"),
     IN_PROGRESS("🔄", "в процессе"),
     PAUSED("⏸️", "на паузе"),
     COMPLETED("✅", "завершена");

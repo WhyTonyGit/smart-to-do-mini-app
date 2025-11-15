@@ -5,6 +5,7 @@ import com.smarttodo.app.dto.*;
 import com.smarttodo.app.entity.HabitInterval;
 import com.smarttodo.app.entity.TaskStatus;
 import com.smarttodo.app.repository.LastActionRedisRepo;
+import com.smarttodo.app.service.HabitService;
 import com.smarttodo.app.service.MetricsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class MessageSender {
     private static final Retry RETRY_5XX_OR_NETWORK = Retry
             .backoff(3, Duration.ofMillis(300))
             .filter(MaxApi::isTransient);
+    private final HabitService habitService;
 
     public void sendText(long chatId, String text) {
         if (chatId <= 0) throw new IllegalArgumentException("chatId must be > 0");
@@ -134,7 +136,7 @@ public class MessageSender {
                 .addCallbackButton("Изменить дэдлайн",      Payload.TASKS_CHANGE_DEADLINE.key())
                 .addCallbackButton("Подтвердить создание",  Payload.TASKS_CREATE_CONFIRM.key())
                 .addCallbackButton("🗓️ Меню привычек",        Payload.HABIT_MENU.key())
-                .addCallbackButton("📋 Меню привычек",        Payload.TASK_MENU.key())
+                .addCallbackButton("📋 Меню задач",        Payload.TASK_MENU.key())
                 .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key())
                 .build();
     }
@@ -160,11 +162,77 @@ public class MessageSender {
                 .addCallbackButton("Изменить дэдлайн",      Payload.TASKS_CHANGE_DEADLINE.key())
                 .addCallbackButton("Подтвердить создание",  Payload.TASKS_CREATE_CONFIRM.key())
                 .addCallbackButton("🗓️ Меню привычек",        Payload.HABIT_MENU.key())
-                .addCallbackButton("📋 Меню привычек",        Payload.TASK_MENU.key())
+                .addCallbackButton("📋 Меню задач",        Payload.TASK_MENU.key())
                 .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key())
                 .build();
 
         sendMessage(chatId, body, MessageMarker.CREATE_TASK);
+    }
+
+    public void sendUpcomingTasks(long chatId, List<TaskDto> tasks) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("""
+            ⏰ **Приближаются дэдлайны по задачам**
+
+            """);
+
+        if (tasks == null || tasks.isEmpty()) {
+            sb.append("""
+                В ближайшее время нет задач с приближающимися дэдлайнами.
+
+                """);
+
+            var emptyBody = InlineKeyboardBuilder.create()
+                    .text(sb.toString())
+                    .format("markdown")
+                    .addCallbackButton("Вернуться в меню", Payload.HOME_PAGE.key())
+                    .build();
+
+            sendMessage(chatId, emptyBody, MessageMarker.TASK_LIST);
+            return;
+        }
+
+        sb.append("""
+            Вот задачи с ближайшими дэдлайнами. 
+            Постарайся не откладывать их надолго 😉
+
+            """);
+
+        for (TaskDto task : tasks) {
+
+            sb.append("""
+                %s **%s**
+                Описание: %s
+                Дэдлайн: %s
+
+                """.formatted(
+                    task.status().getEmoji(),
+                    task.title(),
+                    task.description() == null || task.description().isBlank()
+                            ? "_нет описания_"
+                            : task.description(),
+                    TaskManager.formatLocalDateTime(task.deadline())
+            ));
+        }
+
+        sb.append("\n*Нажми на задачу ниже, чтобы открыть её*");
+
+        var builder = InlineKeyboardBuilder.create()
+                .text(sb.toString())
+                .format("markdown");
+
+        for (TaskDto task : tasks) {
+            builder.addCallbackButton(
+                    task.status().getEmoji() + " " + task.title(),
+                    Payload.TASKS_ID.key() + ":%s".formatted(task.id())
+            );
+        }
+
+        builder.addCallbackButton("🏠 Профиль", Payload.HOME_PAGE.key());
+
+        var body = builder.build();
+        sendMessage(chatId, body, MessageMarker.TASK_LIST);
     }
 
     public void sendHomePageKeyboard(long chatId) {
@@ -214,6 +282,7 @@ public class MessageSender {
                    **Привычки**🌱
                    • Всего: %d
                    • Активных: %d
+                   • Соблюдено: %d
                    • Средний прогресс: %.0f%%
 
                    **Активность**📊
@@ -225,6 +294,7 @@ public class MessageSender {
                     overdueTasks,
                     totalHabits,
                     activeHabits,
+                    habitService.getCompletedHabitsCountForWeek(chatId),
                     avgHabitCompletion,
                     activeDaysCount
             );
@@ -281,7 +351,7 @@ public class MessageSender {
                 .addCallbackButton("Отметить выполненной",   Payload.TASKS_SET_STATUS_COMPLETED.key() + ":" + task.id())
                 .addCallbackButton("Удалить задачу",         Payload.TASKS_DELETE.key() + ":" + task.id())
                 .addCallbackButton("🗓️ Меню привычек",        Payload.HABIT_MENU.key())
-                .addCallbackButton("📋 Меню привычек",        Payload.TASK_MENU.key())
+                .addCallbackButton("📋 Меню задач",        Payload.TASK_MENU.key())
                 .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key())
                 .build();
 
@@ -352,7 +422,7 @@ public class MessageSender {
                 .addCallbackButton("Поставить статус: в процессе", Payload.HABITS_SET_STATUS_IN_PROGRESS.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("Поставить статус: приостановлена", Payload.HABITS_SET_STATUS_PAUSED.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("🗓️ Меню привычек",        Payload.HABIT_MENU.key())
-                .addCallbackButton("📋 Меню привычек",        Payload.TASK_MENU.key())
+                .addCallbackButton("📋 Меню задач",        Payload.TASK_MENU.key())
                 .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key());
 
         sendMessage(chatId, body.build(), MessageMarker.HABIT_LIST);
@@ -398,7 +468,7 @@ public class MessageSender {
         }
 
         body.addCallbackButton("➕ Создать задачу", Payload.TASKS_CREATE_NEW.key());
-        body.addCallbackButton("Главное меню",  Payload.HOME_PAGE.key());
+        body.addCallbackButton("🏠 Профиль",  Payload.HOME_PAGE.key());
 
         sendMessage(chatId, body.build(), MessageMarker.TASK_LIST);
     }
@@ -417,7 +487,7 @@ public class MessageSender {
                 .addCallbackButton("📆 На неделю",          Payload.TASKS_GET_WEEK.key())
                 .addCallbackButton("📆 На завтра",          Payload.TASKS_GET_TOMORROW.key())
                 .addCallbackButton("➕ Создать задачу",      Payload.TASKS_CREATE_NEW.key())
-                .addCallbackButton("🏠 В профиль",          Payload.HOME_PAGE.key())
+                .addCallbackButton("🏠 Профиль",          Payload.HOME_PAGE.key())
                 .build();
 
         sendMessage(chatId, body, MessageMarker.TASK_MENU);
@@ -438,7 +508,7 @@ public class MessageSender {
 //                .addCallbackButton("📅 На неделю",           Payload.HABITS_GET_WEEK.key())
 //                .addCallbackButton("🔥 Текущие серии",       Payload.HABITS_STREAKS.key())
                 .addCallbackButton("➕ Создать привычку",    Payload.HABITS_CREATE_NEW.key())
-                .addCallbackButton("🏠 В профиль",           Payload.HOME_PAGE.key())
+                .addCallbackButton("🏠 Профиль",           Payload.HOME_PAGE.key())
                 .build();
 
         sendMessage(chatId, body, MessageMarker.HABIT_MENU);
@@ -516,7 +586,7 @@ public class MessageSender {
                     .text(sb.toString())
                     .format("markdown")
                     .addCallbackButton("➕ Создать привычку", Payload.HABITS_CREATE_NEW.key())
-                    .addCallbackButton("🏠 В профиль",        Payload.HOME_PAGE.key())
+                    .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key())
                     .build();
 
             sendMessage(chatId, emptyBody, MessageMarker.HABIT_LIST);
@@ -575,7 +645,7 @@ public class MessageSender {
         }
 
         body.addCallbackButton("➕ Создать привычку", Payload.HABITS_CREATE_NEW.key());
-        body.addCallbackButton("🏠 В профиль",        Payload.HOME_PAGE.key());
+        body.addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key());
 
         sendMessage(chatId, body.build(), MessageMarker.HABIT_LIST);
     }
@@ -620,7 +690,7 @@ public class MessageSender {
             );
         }
 
-        body.addCallbackButton("🏠 В профиль", Payload.HOME_PAGE.key());
+        body.addCallbackButton("🏠 Профиль", Payload.HOME_PAGE.key());
 
         sendMessage(chatId, body.build(), MessageMarker.HABIT_LIST);
     }
@@ -643,7 +713,7 @@ public class MessageSender {
                     .text(sb.toString())
                     .format("markdown")
                     .addCallbackButton("➕ Создать привычку", Payload.HABITS_CREATE_NEW.key())
-                    .addCallbackButton("🏠 В профиль",        Payload.HOME_PAGE.key())
+                    .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key())
                     .build();
 
             sendMessage(chatId, emptyBody, MessageMarker.HABIT_LIST);
@@ -690,7 +760,7 @@ public class MessageSender {
         }
 
         body.addCallbackButton("➕ Создать привычку", Payload.HABITS_CREATE_NEW.key());
-        body.addCallbackButton("🏠 В профиль",        Payload.HOME_PAGE.key());
+        body.addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key());
 
         sendMessage(chatId, body.build(), MessageMarker.HABIT_LIST);
     }
@@ -770,7 +840,7 @@ public class MessageSender {
                 .addCallbackButton("Изменить дату завершения",Payload.HABITS_CHANGE_GOAL_DATE.key())
                 .addCallbackButton("Подтвердить создание",    Payload.HABITS_CREATE_CONFIRM.key())
                 .addCallbackButton("🗓️ Меню привычек",        Payload.HABIT_MENU.key())
-                .addCallbackButton("📋 Меню привычек",        Payload.TASK_MENU.key())
+                .addCallbackButton("📋 Меню задач",        Payload.TASK_MENU.key())
                 .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key())
                 .build();
     }
@@ -795,7 +865,7 @@ public class MessageSender {
                 .addCallbackButton("Изменить дату завершения", Payload.HABITS_CHANGE_GOAL_DATE.key())
                 .addCallbackButton("Подтвердить создание", Payload.HABITS_CREATE_CONFIRM.key())
                 .addCallbackButton("🗓️ Меню привычек",        Payload.HABIT_MENU.key())
-                .addCallbackButton("📋 Меню привычек",        Payload.TASK_MENU.key())
+                .addCallbackButton("📋 Меню задач",        Payload.TASK_MENU.key())
                 .addCallbackButton("🏠 Профиль",        Payload.HOME_PAGE.key())
                 .build();
 

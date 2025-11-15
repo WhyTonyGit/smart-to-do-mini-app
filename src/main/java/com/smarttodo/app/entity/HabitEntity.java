@@ -42,7 +42,7 @@ public class HabitEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 32)
-    private HabitStatus status = HabitStatus.IN_PROGRESS;
+    private HabitStatus status = HabitStatus.ARCHIVED;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "interval", length = 32)

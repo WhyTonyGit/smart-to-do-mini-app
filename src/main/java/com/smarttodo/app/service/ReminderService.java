@@ -60,9 +60,9 @@ public class ReminderService {
                 .map(this::toTaskDto)
                 .collect(Collectors.toList());
 
-//        if (!taskDtos.isEmpty()) {
-//            messageSender.sendUpcomingTasks(taskDtos);
-//        }
+        if (!taskDtos.isEmpty()) {
+            messageSender.sendUpcomingTasks(chatId, taskDtos);
+        }
 
         return taskDtos;
     }

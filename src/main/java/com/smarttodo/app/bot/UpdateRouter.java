@@ -2,13 +2,9 @@ package com.smarttodo.app.bot;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smarttodo.app.client.MaxApi;
 import com.smarttodo.app.dto.MessageMeta;
 import com.smarttodo.app.entity.Update;
-import com.smarttodo.app.llm.NlpService;
-import com.smarttodo.app.repository.LastActionRedisRepo;   // <-- синхронный репозиторий
-import com.smarttodo.app.service.HabitService;
-import com.smarttodo.app.service.TaskService;
+import com.smarttodo.app.repository.LastActionRedisRepo;
 import com.smarttodo.app.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -25,12 +21,8 @@ public class UpdateRouter {
 
     private final ObjectMapper om;
     private final MessageSender messageSender;
-    private final NlpService nlp;
-    private final MaxApi maxApi;
 
     private final UserService userService;
-    private final TaskService taskService;
-    private final HabitService habitService;
     private final LastActionRedisRepo lastActionRepo;// <-- заменили тип
     private final TaskManager taskManager;
     private final HabitManager habitManager;

@@ -32,7 +32,7 @@ public class HabitService {
 
         HabitEntity habit = new HabitEntity(chatId, user, createHabitDto.title());
         habit.setDescription(createHabitDto.description());
-        habit.setStatus(HabitStatus.ARCHIVED);
+        habit.setStatus(createHabitDto.status());
         habit.setInterval(createHabitDto.interval());
         habit.setPriority(createHabitDto.priority());
         habit.setGoalDate(createHabitDto.goalDate());

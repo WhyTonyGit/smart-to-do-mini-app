@@ -20,8 +20,6 @@ import java.util.*;
 @Service
 public class MaxApi {
 
-
-
     private final WebClient client; // собран в MaxConfig: baseUrl + Authorization
 
     public MaxApi(@Qualifier("maxClient") WebClient client) {
