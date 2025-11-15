@@ -1,6 +1,6 @@
-package com.smarttodo.app.llm;
+package com.smarttodo.app.llm.task;
 
-import com.smarttodo.app.llm.dto.ParseResult;
+import com.smarttodo.app.llm.task.dto.ParseResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
