@@ -293,6 +293,7 @@ public class TaskManager {
             }
             case TASKS_DELETE -> {
                 taskService.deleteTask(task.id());
+                messageSender.sendText(u.chatId(), "Задача удалена");
             }
         }
 

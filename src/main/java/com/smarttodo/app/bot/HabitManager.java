@@ -73,27 +73,27 @@ public class HabitManager {
             }
             case HABITS_SET_STATUS_ARCHIVED -> {
                 habitService.markHabitAsArchived(habit.id());
-                messageSender.sendHabit(u.chatId(), habit);
+                messageSender.sendHabit(u.chatId(), habitService.getHabitCheckinDtoById(payload.extractId(u.getPayload())));
             }
             case HABITS_SET_STATUS_COMPLETED -> {
                 habitService.markHabitAsCompleted(habit.id());
-                messageSender.sendHabit(u.chatId(), habit);
+                messageSender.sendHabit(u.chatId(), habitService.getHabitCheckinDtoById(payload.extractId(u.getPayload())));
             }
             case HABITS_SET_STATUS_PAUSED -> {
                 habitService.markHabitAsPaused(habit.id());
-                messageSender.sendHabit(u.chatId(), habit);
+                messageSender.sendHabit(u.chatId(), habitService.getHabitCheckinDtoById(payload.extractId(u.getPayload())));
             }
             case HABITS_SET_STATUS_IN_PROGRESS -> {
                 habitService.markHabitAsInProgress(habit.id());
-                messageSender.sendHabit(u.chatId(), habit);
+                messageSender.sendHabit(u.chatId(), habitService.getHabitCheckinDtoById(payload.extractId(u.getPayload())));
             }
             case HABITS_MARK_AS_UNCOMPLETED -> {
                 habitService.uncheckinHabit(habit.id(), LocalDate.now());
-                messageSender.sendHabit(u.chatId(), habit);
+                messageSender.sendHabit(u.chatId(), habitService.getHabitCheckinDtoById(payload.extractId(u.getPayload())));
             }
             case HABITS_MARK_AS_COMPLETED -> {
                 habitService.checkinHabit(habit.id(), LocalDate.now());
-                messageSender.sendHabit(u.chatId(), habit);
+                messageSender.sendHabit(u.chatId(), habitService.getHabitCheckinDtoById(payload.extractId(u.getPayload())));
             }
             case HABITS_CHANGE_TITLE -> {
                 habitRedisRepo.save(u.chatId(), habit);
@@ -231,7 +231,7 @@ public class HabitManager {
                         null,
                         null,
                         null,
-                        null,
+                        HabitStatus.IN_PROGRESS,
                         interval,
                         null,
                         null,

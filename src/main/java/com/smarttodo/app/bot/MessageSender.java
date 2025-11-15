@@ -288,7 +288,7 @@ public class MessageSender {
                 : habit.description();
 
         String interval = habit.interval() != null
-                ? habit.interval().name()
+                ? habit.interval().getDisplayName()
                 : "не задана";
 
         String goalDate = habit.goalDate() != null
@@ -345,9 +345,9 @@ public class MessageSender {
         body.addCallbackButton("Поставить статус: завершена", Payload.HABITS_SET_STATUS_ARCHIVED.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("Поставить статус: в процессе", Payload.HABITS_SET_STATUS_IN_PROGRESS.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("Поставить статус: приостановлена", Payload.HABITS_SET_STATUS_PAUSED.key() + ":%s".formatted(habit.id()))
-                .addCallbackButton("Вернуться в меню", Payload.HOME_PAGE.key()).build();
+                .addCallbackButton("Вернуться в меню", Payload.HOME_PAGE.key());
 
-        sendMessage(chatId, body, MessageMarker.HABIT_LIST);
+        sendMessage(chatId, body.build(), MessageMarker.HABIT_LIST);
     }
 
     private void sendTaskList(long chatId, List<TaskDto> tasks, String title) {
@@ -426,9 +426,9 @@ public class MessageSender {
                         """)
                 .format("markdown")
                 .addCallbackButton("💪 Все привычки",        Payload.HABITS_GET_ALL.key())
-                .addCallbackButton("✅ На сегодня",          Payload.HABITS_GET_TODAY.key())
-                .addCallbackButton("📅 На неделю",           Payload.HABITS_GET_WEEK.key())
-                .addCallbackButton("🔥 Текущие серии",       Payload.HABITS_STREAKS.key())
+                .addCallbackButton("📅 На сегодня",          Payload.HABITS_GET_TODAY.key())
+//                .addCallbackButton("📅 На неделю",           Payload.HABITS_GET_WEEK.key())
+//                .addCallbackButton("🔥 Текущие серии",       Payload.HABITS_STREAKS.key())
                 .addCallbackButton("➕ Создать привычку",    Payload.HABITS_CREATE_NEW.key())
                 .addCallbackButton("🏠 В профиль",           Payload.HOME_PAGE.key())
                 .build();
@@ -476,16 +476,100 @@ public class MessageSender {
                 "У тебя пока нет привычек. Начни с создания первой!");
     }
 
-    public void sendTodayHabitsList(long chatId, List<HabitDto> habits) {
-        sendHabitList(chatId, habits,
+    // привычки на сегодня — HabitCheckinDto
+    public void sendTodayHabitsList(long chatId, List<HabitCheckinDto> habits) {
+        sendHabitCheckinList(chatId, habits,
                 "Привычки на сегодня",
                 "На сегодня привычек нет. Можно отдохнуть — или добавить что-то полезное 🙂");
     }
 
-    public void sendWeekHabitsList(long chatId, List<HabitDto> habits) {
-        sendHabitList(chatId, habits,
+    // привычки на неделю — HabitCheckinDto
+    public void sendWeekHabitsList(long chatId, List<HabitCheckinDto> habits) {
+        sendHabitCheckinList(chatId, habits,
                 "Привычки на неделю",
                 "На эту неделю ещё нет привычек. Добавь хотя бы одну, чтобы разогнаться!");
+    }
+
+    private void sendHabitCheckinList(long chatId,
+                                      List<HabitCheckinDto> habits,
+                                      String title,
+                                      String emptyMessage) {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("""
+            **%s**
+
+            """.formatted(title));
+
+        if (habits == null || habits.isEmpty()) {
+            sb.append(emptyMessage);
+            var emptyBody = InlineKeyboardBuilder.create()
+                    .text(sb.toString())
+                    .format("markdown")
+                    .addCallbackButton("➕ Создать привычку", Payload.HABITS_CREATE_NEW.key())
+                    .addCallbackButton("🏠 В профиль",        Payload.HOME_PAGE.key())
+                    .build();
+
+            sendMessage(chatId, emptyBody, MessageMarker.HABIT_LIST);
+            return;
+        }
+
+        sb.append("""
+            Вот твои привычки. Нажми на любую, чтобы посмотреть детали
+            и отметить выполнение.
+
+            """);
+
+        for (HabitCheckinDto habit : habits) {
+            String description = habit.description() == null || habit.description().isBlank()
+                    ? "_нет описания_"
+                    : habit.description();
+
+            String interval = habit.interval() == null
+                    ? "не задана"
+                    : habit.interval().getDisplayName();
+
+            String goalDate = habit.goalDate() == null
+                    ? "не задана"
+                    : habit.goalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+
+            String completed = habit.isCompleted() ? "✅" : "❌";
+
+            sb.append("""
+                %s **%s**
+                Описание: %s
+                Периодичность: %s
+                Цель до: %s
+                Выполнена: %s
+
+                """.formatted(
+                    habit.status().getEmoji(),
+                    habit.title(),
+                    description,
+                    interval,
+                    goalDate,
+                    completed
+            ));
+        }
+
+        sb.append("\n*Кликните на привычку, чтобы перейти к ней*");
+
+        var body = InlineKeyboardBuilder.create()
+                .text(sb.toString())
+                .format("markdown");
+
+        for (HabitCheckinDto habit : habits) {
+            body.addCallbackButton(
+                    habit.status().getEmoji() + " " + habit.title(),
+                    Payload.HABITS_ID.key() + ":%s".formatted(habit.id())
+            );
+        }
+
+        body.addCallbackButton("➕ Создать привычку", Payload.HABITS_CREATE_NEW.key());
+        body.addCallbackButton("🏠 В профиль",        Payload.HOME_PAGE.key());
+
+        sendMessage(chatId, body.build(), MessageMarker.HABIT_LIST);
     }
 
     public void sendHabitsStreaks(long chatId,

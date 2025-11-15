@@ -32,7 +32,7 @@ public class ReminderService {
         List<TaskEntity> upcomingTasks = taskRepository.findAll().stream()
                 .filter(task -> task.getDeadline() != null)
                 .filter(task -> task.getDeadline().isAfter(now) && task.getDeadline().isBefore(oneHourLater))
-                .filter(task -> task.getStatus() != TaskStatus.DONE)
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
                 .toList();
 
         List<TaskDto> taskDtos = upcomingTasks.stream()
@@ -40,7 +40,7 @@ public class ReminderService {
                 .collect(Collectors.toList());
 
         if (!taskDtos.isEmpty()) {
-            messageSender.sendUpcomingTasks(taskDtos);
+//            messageSender.sendUpcomingTasks(taskDtos);
         }
 
         return taskDtos;
@@ -53,16 +53,16 @@ public class ReminderService {
         List<TaskEntity> upcomingTasks = taskRepository.findAll().stream()
                 .filter(task -> task.getDeadline() != null)
                 .filter(task -> task.getDeadline().isAfter(now) && task.getDeadline().isBefore(oneDayLater))
-                .filter(task -> task.getStatus() != TaskStatus.DONE)
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
                 .toList();
 
         List<TaskDto> taskDtos = upcomingTasks.stream()
                 .map(this::toTaskDto)
                 .collect(Collectors.toList());
 
-        if (!taskDtos.isEmpty()) {
-            messageSender.sendUpcomingTasks(taskDtos);
-        }
+//        if (!taskDtos.isEmpty()) {
+//            messageSender.sendUpcomingTasks(taskDtos);
+//        }
 
         return taskDtos;
     }
@@ -76,7 +76,7 @@ public class ReminderService {
                     LocalDateTime tomorrowStart = todayStart.plusDays(1);
                     return deadline.isAfter(todayStart) && deadline.isBefore(tomorrowStart);
                 })
-                .filter(task -> task.getStatus() != TaskStatus.DONE)
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
                 .map(this::toTaskDto)
                 .collect(Collectors.toList());
 
@@ -88,8 +88,8 @@ public class ReminderService {
                 .map(habitService::toDto)
                 .collect(Collectors.toList());
 
-        messageSender.sendTodayTasksList(todayTasks);
-        messageSender.sendTodayHabitsList(habitDtos);
+//        messageSender.sendTodayTasksList(todayTasks);
+//        messageSender.sendTodayHabitsList(habitDtos);
 
         return todayTasks;
     }
