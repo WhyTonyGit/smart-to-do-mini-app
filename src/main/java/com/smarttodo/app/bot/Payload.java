@@ -73,6 +73,7 @@ public enum Payload {
                  TASKS_SET_STATUS_COMPLETED,
                  TASKS_DELETE,
                  HABITS_ID,
+                 HABITS_DELETE,
                  HABITS_SET_STATUS_COMPLETED,
                  HABITS_SET_STATUS_ARCHIVED,
                  HABITS_SET_STATUS_PAUSED,

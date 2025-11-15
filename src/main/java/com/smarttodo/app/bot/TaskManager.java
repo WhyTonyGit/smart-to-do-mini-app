@@ -301,7 +301,7 @@ public class TaskManager {
     }
 
     public static String formatLocalDateTime(LocalDateTime dateTime) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy HH:mm:ss");
         if (dateTime == null) {
             return "...";
         }

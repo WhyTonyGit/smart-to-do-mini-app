@@ -54,7 +54,7 @@ public class ReminderService {
                 .toList();
 
         if (!taskDtos.isEmpty()) {
-//            messageSender.sendUpcomingTasks(chatId, taskDtos);
+            messageSender.sendUpcomingTasks(chatId, taskDtos);
         }
 
         return taskDtos;
