@@ -1,8 +1,9 @@
-package com.smarttodo.app.service;
+package com.smarttodo.app.bot;
 
 import com.smarttodo.app.dto.WeeklySummaryDto;
 import com.smarttodo.app.entity.UserEntity;
 import com.smarttodo.app.repository.UserRepository;
+import com.smarttodo.app.service.MetricsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;

@@ -17,4 +17,6 @@ public interface HabitCheckinRepository extends JpaRepository<HabitCheckinEntity
     boolean existsByHabit_IdAndDay(Long habitId, LocalDate day);
 
     void deleteByHabit_IdAndDay(Long habitId, LocalDate day);
+
+    
 }
