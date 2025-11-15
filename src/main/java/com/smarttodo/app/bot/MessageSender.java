@@ -1,10 +1,8 @@
 package com.smarttodo.app.bot;
 
 import com.smarttodo.app.client.MaxApi;
-import com.smarttodo.app.dto.HabitDto;
-import com.smarttodo.app.dto.HabitStatsDto;
-import com.smarttodo.app.dto.MessageMeta;
-import com.smarttodo.app.dto.TaskDto;
+import com.smarttodo.app.dto.*;
+import com.smarttodo.app.entity.HabitInterval;
 import com.smarttodo.app.entity.TaskStatus;
 import com.smarttodo.app.repository.LastActionRedisRepo;
 import com.smarttodo.app.service.MetricsService;
@@ -60,20 +58,19 @@ public class MessageSender {
     public void sendStartKeyboard(long chatId) {
         var body = InlineKeyboardBuilder.create()
                 .text("""
-                        Привет! Я твой помощник по самоорганизации. Помогу планировать день, вести задачи, отслеживать часы активности и формировать полезные привычки.
-
-                        Что я делаю:
-                        • Быстро добавляю и напоминаю о задачах
-                        • Следую за прогрессом и показываю статистику выполнения
-                        • Замеряю «часы активности» — когда ты реально делаешь дела
-                        • Запускаю трекеры привычек и мотивирую не срываться
+                        
+                        Привет! Я твой помощник по самоорганизации. Готов держать фокус, планировать день и превращать хаос в аккуратные победы 💪:
+                        
+                        • ⚡️ Быстро добавляю задачи и напоминаю о важных делах
+                        • 📊 Показываю реальный прогресс и красивую статистику
+                        • ⏱️ Замеряю твои «часы активности» — когда ты действительно работаешь
+                        • 🌱 Запускаю трекеры привычек и помогаю не выбиваться из ритма
+                        
+                        Готов начать? 🚀
                         """)
                 .format("markdown")
-                .addCallbackButton("🎯 Все задачи",        Payload.TASKS_GET_ALL.key())
-                .addCallbackButton("🎯 Задачи на сегодня", Payload.TASKS_GET_TODAY.key())
-                .addCallbackButton("🎯 Задачи на неделю",  Payload.TASKS_GET_WEEK.key())
-                .addCallbackButton("➕ Создать задачу",     Payload.TASKS_CREATE_NEW.key())
-                .addCallbackButton("🗓️ Привычки",          Payload.HABIT_MENU.key())
+                .addCallbackButton("📋 Меню задач",   "tasks-menu")
+                .addCallbackButton("🗓️ Меню привычек", "habits-menu")
                 .build();
 
         sendMessage(chatId, body, MessageMarker.WELCOME);
@@ -122,7 +119,8 @@ public class MessageSender {
                         Описание: %s
                         Дэдлайн: %s
 
-                        Обязательно укажите дату и время дэдлайна по задаче. После обработки поля ниже заполняться автоматически.
+                        Вы можете описать задачу текстом, поля выше заполнятся автоматически или заполнить содержимое с помощью кнопок.
+                        Обязательно укажите дату и время дэдлайна по задаче.
                         Обработка текста занимает 10 - 30 секунд.
                         Затем вы сможете с помощью кнопок отредактировать задачу.
                         """.formatted(
@@ -131,11 +129,11 @@ public class MessageSender {
                         deadline == null ? "." : deadline
                 ))
                 .format("markdown")
-                .addCallbackButton("Подтвердить создание",  Payload.TASKS_CREATE_CONFIRM.key())
-                .addCallbackButton("Вернуться в меню",      Payload.HOME_PAGE.key())
                 .addCallbackButton("Изменить название",     Payload.TASKS_CHANGE_TITLE.key())
                 .addCallbackButton("Изменить описание",     Payload.TASKS_CHANGE_DESCRIPTION.key())
                 .addCallbackButton("Изменить дэдлайн",      Payload.TASKS_CHANGE_DEADLINE.key())
+                .addCallbackButton("Подтвердить создание",  Payload.TASKS_CREATE_CONFIRM.key())
+                .addCallbackButton("Вернуться в меню",      Payload.HOME_PAGE.key())
                 .build();
     }
 
@@ -148,20 +146,18 @@ public class MessageSender {
                         Название: .
                         Описание: .
                         Дэдлайн: .
-
-                        Обязательно укажите дату и время дэдлайна по задаче. После обработки поля ниже заполняться автоматически.
+                        
+                        Вы можете описать задачу текстом, поля выше заполнятся автоматически или заполнить содержимое с помощью кнопок.
+                        Обязательно укажите дату и время дэдлайна по задаче.
                         Обработка текста занимает 10 - 30 секунд.
                         Затем вы сможете с помощью кнопок отредактировать задачу.
-                        Название: .
-                        Описание: .
-                        Дэдлайн: .
                         """)
                 .format("markdown")
-                .addCallbackButton("Подтвердить создание",  Payload.TASKS_CREATE_CONFIRM.key())
-                .addCallbackButton("Вернуться в меню",      Payload.HOME_PAGE.key())
                 .addCallbackButton("Изменить название",     Payload.TASKS_CHANGE_TITLE.key())
                 .addCallbackButton("Изменить описание",     Payload.TASKS_CHANGE_DESCRIPTION.key())
                 .addCallbackButton("Изменить дэдлайн",      Payload.TASKS_CHANGE_DEADLINE.key())
+                .addCallbackButton("Подтвердить создание",  Payload.TASKS_CREATE_CONFIRM.key())
+                .addCallbackButton("Вернуться в меню",      Payload.HOME_PAGE.key())
                 .build();
 
         sendMessage(chatId, body, MessageMarker.CREATE_TASK);
@@ -206,17 +202,17 @@ public class MessageSender {
 
                    _Неделя: %s_
 
-                   **Задачи**
+                   **Задачи**📅
                    • Всего: %d
                    • Выполнено: %d
                    • Просрочено: %d
 
-                   **Привычки**
+                   **Привычки**🌱
                    • Всего: %d
                    • Активных: %d
                    • Средний прогресс: %.0f%%
 
-                   **Активность**
+                   **Активность**📊
                    • Дней с выполненными задачами: %d из 7
                    """.formatted(
                     period,
@@ -243,7 +239,7 @@ public class MessageSender {
                 .format("markdown")
                 // две кнопки профиля
                 .addCallbackButton("📋 Меню задач",   "tasks-menu")
-                .addCallbackButton("🗓️ Меню привычек", "habit-menu")
+                .addCallbackButton("🗓️ Меню привычек", "habits-menu")
                 .build();
 
         sendMessage(chatId, body, MessageMarker.HOME_MENU);
@@ -267,15 +263,13 @@ public class MessageSender {
                         %s **%s**
                         Описание: %s
                         Дэдлайн: %s
-                        Приоритет: %s
                         Статус: %s
                         """.formatted(
                         task.status().getEmoji(),
                         task.title(),
                         task.description(),
                         TaskManager.formatLocalDateTime(task.deadline()),
-                        task.priority(),
-                        task.status()
+                        task.status().getDescription()
                 ))
                 .format("markdown")
                 .addCallbackButton("Отметить невыполненной",   Payload.TASKS_SET_STATUS_UNCOMPLETED.key() + ":" + task.id())
@@ -288,7 +282,7 @@ public class MessageSender {
         sendMessage(chatId, body, MessageMarker.TASK_LIST);
     }
 
-    public void sendHabit(long chatId, HabitDto habit) {
+    public void sendHabit(long chatId, HabitCheckinDto habit) {
         String description = (habit.description() == null || habit.description().isBlank())
                 ? "_Описание не задано_"
                 : habit.description();
@@ -301,35 +295,57 @@ public class MessageSender {
                 ? habit.goalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
                 : "не задана";
 
-        var body = InlineKeyboardBuilder.create()
-                .text("""
-                        %s **%s**
-                        Выполнена: %s
-                        Описание: %s
-                        Периодичность: %s
-                        Цель до: %s
-                        Статус: %s
-                        """.formatted(
-                        habit.status().getEmoji(),
-                        habit.title(),
-                        habit.isCompleted() ? "да" : "нет",
-                        description,
-                        interval,
-                        goalDate,
-                        habit.status().getDescription()
-                ))
-                .format("markdown")
-                .addCallbackButton("Отметить невыполненной сегодня", Payload.HABITS_MARK_AS_UNCOMPLETED.key() + ":%s".formatted(habit.id()))
-                .addCallbackButton("Отметить выполненной сегодня", Payload.HABITS_MARK_AS_COMPLETED.key() + ":%s".formatted(habit.id()))
-                .addCallbackButton("Изменить название", Payload.HABITS_CHANGE_TITLE.key() + ":%s".formatted(habit.id()))
-                .addCallbackButton("Изменить описание", Payload.HABITS_CHANGE_DESCRIPTION.key() + ":%s".formatted(habit.id()))
-                .addCallbackButton("Изменить периодичность", Payload.HABITS_CHANGE_INTERVAL.key() + ":%s".formatted(habit.id()))
-                .addCallbackButton("Изменить дату завершения привычки", Payload.HABITS_CHANGE_GOAL_DATE.key() + ":%s".formatted(habit.id()))
-                .addCallbackButton("Поставить статус: завершена", Payload.HABITS_SET_STATUS_ARCHIVED.key() + ":%s".formatted(habit.id()))
+        boolean shouldDo = HabitManager.shouldDoToday(habit);
+        InlineKeyboardBuilder body;
+        if (shouldDo) {
+            body = InlineKeyboardBuilder.create()
+                    .text("""
+                   %s **%s**
+                   Необходимо выполнить сегодня: %s
+                   Выполнена: %s
+                   Описание: %s
+                   Периодичность: %s
+                   Цель до: %s
+                   Статус: %s
+                   """.formatted(
+                            habit.status().getEmoji(),
+                            habit.title(),
+                            "да",
+                            habit.isCompletedOnTime() ? "✅" : "❌",
+                            description,
+                            interval,
+                            goalDate,
+                            habit.status().getDescription()
+                    ))
+                    .format("markdown")
+                    .addCallbackButton("Отметить невыполненной сегодня", Payload.HABITS_MARK_AS_UNCOMPLETED.key() + ":%s".formatted(habit.id()))
+                    .addCallbackButton("Отметить выполненной сегодня", Payload.HABITS_MARK_AS_COMPLETED.key() + ":%s".formatted(habit.id()));
+
+        } else {
+            body = InlineKeyboardBuilder.create()
+                    .text("""
+                   %s **%s**
+                   Необходимо выполнить сегодня: %s
+                   Описание: %s
+                   Периодичность: %s
+                   Цель до: %s
+                   Статус: %s
+                   """.formatted(
+                            habit.status().getEmoji(),
+                            habit.title(),
+                            "нет",
+                            description,
+                            interval,
+                            goalDate,
+                            habit.status().getDescription()
+                    ))
+                    .format("markdown");
+        }
+
+        body.addCallbackButton("Поставить статус: завершена", Payload.HABITS_SET_STATUS_ARCHIVED.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("Поставить статус: в процессе", Payload.HABITS_SET_STATUS_IN_PROGRESS.key() + ":%s".formatted(habit.id()))
                 .addCallbackButton("Поставить статус: приостановлена", Payload.HABITS_SET_STATUS_PAUSED.key() + ":%s".formatted(habit.id()))
-                .addCallbackButton("Вернуться в меню", Payload.HOME_PAGE.key())
-                .build();
+                .addCallbackButton("Вернуться в меню", Payload.HOME_PAGE.key()).build();
 
         sendMessage(chatId, body, MessageMarker.HABIT_LIST);
     }
@@ -447,7 +463,8 @@ public class MessageSender {
                     chatId, meta.mid(), meta.seq(), meta.marker());
 
         } catch (Exception e) {
-            log.warn("sendMessage failed: chatId={}, marker={}, err={}", chatId, marker, e.toString());
+            log.warn("sendMessage failed: chatId={}, marker={}, err={}, cause={}",
+                    chatId, marker, e.toString(), e.getCause() != null ? e.getCause().toString() : "null");
         } finally {
             log.debug("sendMessage finished: chatId={}, marker={}", chatId, marker);
         }
@@ -560,7 +577,7 @@ public class MessageSender {
                     habit.description() == null || habit.description().isBlank()
                             ? "_нет описания_"
                             : habit.description(),
-                    habit.interval() == null ? "не задана" : habit.interval().name(),
+                    habit.interval() == null ? "не задана" : habit.interval().getDisplayName(),
                     habit.goalDate() == null
                             ? "не задана"
                             : habit.goalDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
@@ -616,18 +633,77 @@ public class MessageSender {
                         Выбери, как часто должна повторяться привычка:
                         """)
                 .format("markdown")
-                .addMessageButton("Каждый понедельник", "Каждый понедельник")
-                .addMessageButton("Каждый вторник",          "Каждый вторник")
-                .addMessageButton("Каждую среду",          "Каждую среду")
-                .addMessageButton("Каждый четверг",          "Каждый четверг")
-                .addMessageButton("Каждую пятницу",          "Каждую пятницу")
-                .addMessageButton("Каждую субботу",          "Каждую субботу")
-                .addMessageButton("Каждое воскресенье",          "Каждое воскресенье")
-                .addMessageButton("Каждый будний день", "Каждый будний день")
-                .addMessageButton("Каждый выходной день",    "Каждый выходной день")
+                .addMessageButton(HabitInterval.EVERY_DAY.getDisplayName(), HabitInterval.EVERY_DAY.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_WEEKDAY.getDisplayName(), HabitInterval.EVERY_WEEKDAY.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_WEEKEND.getDisplayName(), HabitInterval.EVERY_WEEKEND.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_WEEK.getDisplayName(), HabitInterval.EVERY_WEEK.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_MONDAY.getDisplayName(), HabitInterval.EVERY_MONDAY.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_TUESDAY.getDisplayName(), HabitInterval.EVERY_TUESDAY.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_WEDNESDAY.getDisplayName(), HabitInterval.EVERY_WEDNESDAY.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_THURSDAY.getDisplayName(), HabitInterval.EVERY_THURSDAY.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_FRIDAY.getDisplayName(), HabitInterval.EVERY_FRIDAY.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_SATURDAY.getDisplayName(), HabitInterval.EVERY_SATURDAY.getDisplayName())
+                .addMessageButton(HabitInterval.EVERY_SUNDAY.getDisplayName(), HabitInterval.EVERY_SUNDAY.getDisplayName())
                 .build();
 
         sendMessage(chatId, body, MessageMarker.CHANGE_HABIT_INTERVAL);
+    }
+
+    public Object createHabitCreateKeyboardBody(String title,
+                                                String description,
+                                                String interval,
+                                                String goalDate) {
+
+        return InlineKeyboardBuilder.create()
+                .text("""
+                    💪**Создание привычки.**
+                    Создайте привычку, используя кнопки ниже.
+                    Заполните название, описание, периодичность и дату цели —
+                    после этого можно будет подтвердить создание.
+
+                    Название: %s
+                    Описание: %s
+                    Периодичность: %s
+                    Цель до: %s
+                    """.formatted(
+                        title == null || title.isBlank() ? "." : title,
+                        description == null || description.isBlank() ? "." : description,
+                        interval == null || interval.isBlank() ? "." : interval,
+                        goalDate == null || goalDate.isBlank() ? "." : goalDate
+                ))
+                .format("markdown")
+                .addCallbackButton("Изменить название",       Payload.HABITS_CHANGE_TITLE.key())
+                .addCallbackButton("Изменить описание",       Payload.HABITS_CHANGE_DESCRIPTION.key())
+                .addCallbackButton("Изменить периодичность",  Payload.HABITS_CHANGE_INTERVAL.key())
+                .addCallbackButton("Изменить дату завершения",Payload.HABITS_CHANGE_GOAL_DATE.key())
+                .addCallbackButton("Подтвердить создание",    Payload.HABITS_CREATE_CONFIRM.key())
+                .addCallbackButton("Вернуться в меню",        Payload.HOME_PAGE.key())
+                .build();
+    }
+
+    public void sendHabitCreateKeyboard(long chatId) {
+        var body = InlineKeyboardBuilder.create()
+                .text("""
+                        💪**Создание привычки.**
+                        Создайте привычку, используя кнопки ниже.
+                        Заполните название, описание, периодичность и дату цели —
+                        после этого можно будет подтвердить создание.
+                        
+                        Название: .
+                        Описание: .
+                        Периодичность: .
+                        Цель до: .
+                        """)
+                .format("markdown")
+                .addCallbackButton("Изменить название", Payload.HABITS_CHANGE_TITLE.key())
+                .addCallbackButton("Изменить описание", Payload.HABITS_CHANGE_DESCRIPTION.key())
+                .addCallbackButton("Изменить периодичность", Payload.HABITS_CHANGE_INTERVAL.key())
+                .addCallbackButton("Изменить дату завершения", Payload.HABITS_CHANGE_GOAL_DATE.key())
+                .addCallbackButton("Подтвердить создание", Payload.HABITS_CREATE_CONFIRM.key())
+                .addCallbackButton("Вернуться в меню", Payload.HOME_PAGE.key())
+                .build();
+
+        sendMessage(chatId, body, MessageMarker.CREATE_HABIT);
     }
 
     public void sendHabitGoalDateInput(long chatId) {

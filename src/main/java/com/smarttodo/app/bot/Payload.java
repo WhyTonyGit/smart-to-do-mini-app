@@ -31,6 +31,7 @@ public enum Payload {
     HABITS_SET_STATUS_IN_PROGRESS("habits-set-status-in-progress"),
     HABITS_MARK_AS_COMPLETED("habits-mark-as-completed"),
     HABITS_MARK_AS_UNCOMPLETED("habits-mark-as-uncompleted"),
+    HABITS_CREATE_CONFIRM("habits-create-confirm"),
 
     HOME_PAGE("home-page"),
 
@@ -69,7 +70,18 @@ public enum Payload {
                  TASKS_SET_STATUS_UNCOMPLETED,
                  TASKS_SET_STATUS_IN_PROGRESS,
                  TASKS_SET_STATUS_COMPLETED,
-                 TASKS_DELETE -> true;
+                 TASKS_DELETE,
+                 HABITS_ID,
+                 HABITS_CHANGE_TITLE,
+                 HABITS_CHANGE_DESCRIPTION,
+                 HABITS_CHANGE_INTERVAL,
+                 HABITS_CHANGE_GOAL_DATE,
+                 HABITS_SET_STATUS_COMPLETED,
+                 HABITS_SET_STATUS_ARCHIVED,
+                 HABITS_SET_STATUS_PAUSED,
+                 HABITS_SET_STATUS_IN_PROGRESS,
+                 HABITS_MARK_AS_COMPLETED,
+                 HABITS_MARK_AS_UNCOMPLETED -> true;
             default -> false;
         };
     }

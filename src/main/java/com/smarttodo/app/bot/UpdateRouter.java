@@ -108,6 +108,22 @@ public class UpdateRouter {
 
                     taskManager.changeTaskDeadline(u);
                 }
+                case CHANGE_HABIT_TITLE -> {
+                    log.info("Marker=CHANGE_HABIT_TITLE -> creating habit flow, chatId={}", u.chatId());
+                    habitManager.changeHabitTitle(u);
+                }
+                case CHANGE_HABIT_DESCRIPTION -> {
+                    log.info("Marker=CHANGE_HABIT_DESCRIPTION -> creating habit flow, chatId={}", u.chatId());
+                    habitManager.changeHabitDescription(u);
+                }
+                case CHANGE_HABIT_INTERVAL -> {
+                    log.info("Marker=CHANGE_HABIT_INTERVAL -> creating habit flow, chatId={}", u.chatId());
+                    habitManager.changeHabitInterval(u);
+                }
+                case CHANGE_HABIT_GOAL_DATE -> {
+                    log.info("Marker=CHANGE_HABIT_GOAL_DATE -> creating habit flow, chatId={}", u.chatId());
+                    habitManager.changeHabitGoalDate(u);
+                }
                 default -> {
                     log.info("Unknown marker={} -> fallback, chatId={}", marker, u.chatId());
                     messageSender.sendText(u.chatId(), "Нераспознанный контекст");
@@ -125,6 +141,7 @@ public class UpdateRouter {
                 return;
             }
 
+            log.info("Checking payload {} hasId: {}", u.getPayload(), payload.hasId());
             if (payload.hasId()) {
                 if (payload.isTasksPayload()) {
                     taskManager.pickTask(u);
@@ -132,12 +149,12 @@ public class UpdateRouter {
                 }
                 if (payload.isHabitsPayload()) {
                     habitManager.pickHabit(u);
+                    return;
                 }
             }
 
             switch (payload) {
                 case TASK_MENU -> messageSender.sendTaskKeyboard(u.chatId());
-                case HABIT_MENU -> messageSender.sendHabitKeyboard(u.chatId());
                 case TASKS_CREATE_NEW -> taskManager.createTask(u);
                 case TASKS_CHANGE_TITLE -> messageSender.sendInputTaskTitle(u.chatId());
                 case TASKS_CHANGE_DESCRIPTION -> messageSender.sendInputTaskDescription(u.chatId());
@@ -147,6 +164,18 @@ public class UpdateRouter {
                 case TASKS_GET_WEEK -> taskManager.getWeekTaskList(u);
                 case TASKS_GET_ALL -> taskManager.getAllTaskList(u);
                 case TASKS_GET_TOMORROW -> taskManager.getTomorrowTaskList(u);
+
+                case HABIT_MENU -> messageSender.sendHabitKeyboard(u.chatId());
+                case HABITS_CREATE_NEW -> habitManager.createHabit(u);
+                case HABITS_CHANGE_TITLE ->  messageSender.sendHabitTitleInput(u.chatId());
+                case HABITS_CHANGE_DESCRIPTION ->   messageSender.sendHabitDescriptionInput(u.chatId());
+                case HABITS_CHANGE_INTERVAL ->   messageSender.sendHabitIntervalInput(u.chatId());
+                case HABITS_CHANGE_GOAL_DATE ->   messageSender.sendHabitGoalDateInput(u.chatId());
+                case HABITS_GET_ALL -> habitManager.getAllHabitsList(u);
+                case HABITS_GET_TODAY -> habitManager.getTodayHabitsList(u);
+                case HABITS_GET_WEEK -> habitManager.getWeekHabitsList(u);
+                case HABITS_CREATE_CONFIRM ->  habitManager.confirmHabitCreating(u);
+
                 case HOME_PAGE -> messageSender.sendHomePageKeyboard(u.chatId());
 
                 default -> messageSender.sendText(u.chatId(), "Ошибка");

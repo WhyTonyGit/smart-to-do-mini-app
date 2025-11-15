@@ -78,6 +78,16 @@ public class HabitService {
     }
 
     @Transactional(readOnly = true)
+    public HabitCheckinDto getHabitCheckinDtoById(Long habitId) {
+        LocalDate today = LocalDate.now();
+
+        HabitEntity habit = habitRepository.findById(habitId).orElseThrow();
+        boolean isCompleted = isHabitCompletedForDate(habit.getId(), today);
+
+        return toCheckinDto(habit, today, isCompleted, isCompleted);
+    }
+
+    @Transactional(readOnly = true)
     public List<HabitDto> getAllHabits(Long chatId) {
         return habitRepository.findAllByChatId(chatId).stream()
                 .map(this::toDto)
@@ -85,47 +95,57 @@ public class HabitService {
     }
 
     @Transactional(readOnly = true)
-    public List<HabitCheckinDto> getHabitsForToday(Long chatId) {
+    public List<HabitDto> getHabitsForToday(Long chatId) {
         LocalDate today = LocalDate.now();
+
+//        return habitRepository.findAllByChatId(chatId).stream()
+//                .filter(habit -> isHabitDueToday(habit, today))
+//                .map(habit -> {
+//                    boolean isCompleted = isHabitCompletedForDate(habit.getId(), today);
+//                    return toCheckinDto(habit, today, isCompleted, isCompleted); // второй isCompleted - заглушка на isCompletedOnTime
+//                })
+//                .toList();
 
         return habitRepository.findAllByChatId(chatId).stream()
                 .filter(habit -> isHabitDueToday(habit, today))
-                .map(habit -> {
-                    boolean isCompleted = isHabitCompletedForDate(habit.getId(), today);
-                    return toCheckinDto(habit, today, isCompleted, isCompleted); // второй isCompleted - заглушка на isCompletedOnTime
-                })
+                .map(this::toDto)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<HabitCheckinDto> getHabitsForWeek(Long chatId) {
-        LocalDate end = LocalDate.now();
-        LocalDate start = end.minusDays(6);
+    public List<HabitDto> getHabitsForWeek(Long chatId) {
+        LocalDate today = LocalDate.now();
+        LocalDate weekEnd = today.plusDays(7);
+
+//        return habitRepository.findAllByChatId(chatId).stream()
+//                .flatMap(habit -> start.datesUntil(end.plusDays(1))
+//                        .filter(day -> isHabitDueToday(habit, day))
+//                        .map(day -> {
+//                            boolean isCompleted = isHabitCompletedForDate(habit.getId(), day);
+//                            return toCheckinDto(habit, day, isCompleted, isCompleted); // второй isCompleted - заглушка isCompletedOnTime
+//                        })
+//                )
+//                .toList();
 
         return habitRepository.findAllByChatId(chatId).stream()
-                .flatMap(habit -> start.datesUntil(end.plusDays(1))
-                        .filter(day -> isHabitDueToday(habit, day))
-                        .map(day -> {
-                            boolean isCompleted = isHabitCompletedForDate(habit.getId(), day);
-                            return toCheckinDto(habit, day, isCompleted, isCompleted); // второй isCompleted - заглушка isCompletedOnTime
-                        })
-                )
+                .filter(habit -> isHabitDueInPeriod(habit, today, weekEnd))
+                .map(this::toDto)
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<HabitCheckinDto> getUncompletedHabitsForToday(Long chatId) {
-        return getHabitsForToday(chatId).stream()
-                .filter(habit -> !habit.isCompleted())
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<HabitCheckinDto> getUncompletedHabitsForWeek(Long chatId) {
-        return getHabitsForWeek(chatId).stream()
-                .filter(habit -> !habit.isCompleted())
-                .toList();
-    }
+//    @Transactional(readOnly = true)
+//    public List<HabitCheckinDto> getUncompletedHabitsForToday(Long chatId) {
+//        return getHabitsForToday(chatId).stream()
+//                .filter(habit -> !habit.isCompleted())
+//                .toList();
+//    }
+//
+//    @Transactional(readOnly = true)
+//    public List<HabitCheckinDto> getUncompletedHabitsForWeek(Long chatId) {
+//        return getHabitsForWeek(chatId).stream()
+//                .filter(habit -> !habit.isCompleted())
+//                .toList();
+//    }
 
     @Transactional
     public void updateHabitInterval(Long habitId, HabitInterval newInterval) {
@@ -182,7 +202,6 @@ public class HabitService {
         return switch (interval) {
             case EVERY_DAY -> true;
             case EVERY_WEEK -> dayOfWeek == DayOfWeek.MONDAY;
-            case EVERY_MONTH -> today.getDayOfMonth() == 1;
             case EVERY_WEEKEND -> dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
             case EVERY_WEEKDAY -> dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY;
             case EVERY_SUNDAY -> dayOfWeek == DayOfWeek.SUNDAY;
@@ -212,7 +231,6 @@ public class HabitService {
         return switch (interval) {
             case EVERY_DAY -> fromDate;
             case EVERY_WEEK -> fromDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
-            case EVERY_MONTH -> fromDate.with(TemporalAdjusters.firstDayOfNextMonth());
             case EVERY_SUNDAY -> fromDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
             case EVERY_MONDAY -> fromDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
             case EVERY_TUESDAY -> fromDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.TUESDAY));

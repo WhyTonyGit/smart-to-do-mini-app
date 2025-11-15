@@ -2,6 +2,7 @@ package com.smarttodo.app.repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smarttodo.app.dto.HabitCheckinDto;
 import com.smarttodo.app.dto.HabitDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -29,7 +30,7 @@ public class PendingHabitRedisRepo {
         return PREFIX + chatId;
     }
 
-    public void save(long chatId, HabitDto dto) {
+    public void save(long chatId, HabitCheckinDto dto) {
         String k = key(chatId);
         try {
             String json = objectMapper.writeValueAsString(dto);
@@ -39,14 +40,14 @@ public class PendingHabitRedisRepo {
         }
     }
 
-    public Optional<HabitDto> get(long chatId) {
+    public Optional<HabitCheckinDto> get(long chatId) {
         String k = key(chatId);
         String json = redis.opsForValue().get(k);
         if (json == null || json.isBlank()) {
             return Optional.empty();
         }
         try {
-            HabitDto dto = objectMapper.readValue(json, HabitDto.class);
+            HabitCheckinDto dto = objectMapper.readValue(json, HabitCheckinDto.class);
             return Optional.of(dto);
         } catch (JsonProcessingException e) {
             log.warn("Failed to deserialize TaskDto from JSON", e);
