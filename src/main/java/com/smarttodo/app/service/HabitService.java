@@ -158,7 +158,7 @@ public class HabitService {
     }
 
     @Transactional
-    public void updateHabitInterval(Long habitId, HabitInterval newInterval) {
+    public void  updateHabitInterval(Long habitId, HabitInterval newInterval) {
         HabitEntity habit = habitRepository.findById(habitId)
                 .orElseThrow(() -> new IllegalArgumentException("Не найдена привычка с id: " + habitId));
         habit.setInterval(newInterval);
@@ -226,7 +226,7 @@ public class HabitService {
     private boolean isHabitDueInPeriod(HabitEntity habit, LocalDate start, LocalDate end) {
         return start.datesUntil(end.plusDays(1)).anyMatch(day -> isHabitDueToday(habit, day));
     }
-    private boolean isHabitCompletedForDate(Long habitId, LocalDate date) {
+    public boolean isHabitCompletedForDate(Long habitId, LocalDate date) {
         return habitCheckinRepository.existsByHabit_IdAndDay(habitId, date);
     }
 
