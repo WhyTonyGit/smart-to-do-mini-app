@@ -1,6 +1,5 @@
 package com.smarttodo.app.bot;
 
-import com.smarttodo.app.bot.MessageSender;
 import com.smarttodo.app.dto.WeeklySummaryDto;
 import com.smarttodo.app.entity.HabitEntity;
 import lombok.RequiredArgsConstructor;
@@ -105,6 +104,27 @@ public class MetricsManager {
                     return dayName + " (" + entry.getValue() + " задач)";
                 })
                 .orElse("Нет данных");
+    }
+
+    public void sendWeeklySummary(Long chatId, WeeklySummaryDto weeklySummary) {
+        if (!hasWeeklyActivity(weeklySummary)) {
+            messageSender.sendText(chatId,
+                    """
+                            📊 Ваша статистика за неделю
+                            
+                            На этой неделе у вас не было активных задач или привычек.
+                            Начните добавлять задачи и привычки, чтобы видеть свою статистику! 💪""");
+            return;
+        }
+
+        String weeklyStats = formatWeeklyStats(weeklySummary);
+        messageSender.sendText(chatId, weeklyStats);
+        notifyWeeklyAchievements(chatId, weeklySummary);
+    }
+
+    private boolean hasWeeklyActivity(WeeklySummaryDto weeklySummary) {
+        return weeklySummary.taskStats().totalTasks() > 0 ||
+                weeklySummary.habitStats().totalHabits() > 0;
     }
 
     private String getDayOfWeekName(DayOfWeek dayOfWeek) {
