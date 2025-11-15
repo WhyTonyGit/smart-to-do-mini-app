@@ -12,5 +12,11 @@ public interface HabitCheckinRepository extends JpaRepository<HabitCheckinEntity
 
     List<HabitCheckinEntity> findAllByHabit_IdAndDayBetween(Long habitId, LocalDate startDate, LocalDate endDate);
 
+    List<HabitCheckinEntity> findAllByHabit_IdOrderByDayAsc(Long habitId);
+
     boolean existsByHabit_IdAndDay(Long habitId, LocalDate day);
+
+    void deleteByHabit_IdAndDay(Long habitId, LocalDate day);
+
+    
 }

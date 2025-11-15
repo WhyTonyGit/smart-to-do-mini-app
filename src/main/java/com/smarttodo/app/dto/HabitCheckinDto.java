@@ -6,19 +6,21 @@ import com.smarttodo.app.entity.Priority;
 
 import java.time.LocalDate;
 
-public record HabitDto(
+public record HabitCheckinDto(
         Long id,
         String title,
         String description,
         HabitStatus status,
         HabitInterval interval,
         Priority priority,
-        LocalDate goalDate
+        LocalDate day,
+        LocalDate goalDate,
+        boolean isCompleted,
+        boolean isCompletedOnTime
 ) {
-    public HabitDto {
+    public HabitCheckinDto {
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("Title cannot be null or blank");
         }
     }
 }
-

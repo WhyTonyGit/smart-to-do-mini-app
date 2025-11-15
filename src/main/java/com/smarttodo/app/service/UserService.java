@@ -27,13 +27,22 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("Не найден юзер с id чата: " + chatId));
     }
 
+    @Transactional(readOnly = true)
+    public boolean iSUserExists(Long userId) {
+        return userRepository.existsById(userId);
+    }
+
     @Transactional
-    public UserEntity createUser(Long chatId, String displayName) {
+    public UserEntity createUser(Long id, Long chatId, String displayName) {
+        if (userRepository.existsById(id)) {
+            throw new IllegalArgumentException("Юзер с id уже существует: " + id);
+        }
+
         if (userRepository.existsByChatId(chatId)) {
             throw new IllegalArgumentException("Юзер с таким id чата уже существует: " + chatId);
         }
 
-        UserEntity user = new UserEntity(chatId);
+        UserEntity user = new UserEntity(id, chatId);
         user.setDisplayName(displayName);
         return userRepository.save(user);
     }

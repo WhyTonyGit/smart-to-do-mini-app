@@ -36,6 +36,19 @@ services:
       start_period: 30s
     command: ["serve"]
 
+  redis:
+    image: redis:7-alpine
+    container_name: smarttodo-redis
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   # One-shot контейнер который качает модель и выходит
   ollama-pull:
     image: ollama/ollama:latest
@@ -114,13 +127,19 @@ services:
       OLLAMA_API_MODEL: qwen2.5:0.5b
       OLLAMA_API_TIMEOUT_SECONDS: 120
       REMINDER_MODEL: reminder-title
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+#      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
       ollama:
         condition: service_started
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   pgdata:
   ollama:
+  redis-data:

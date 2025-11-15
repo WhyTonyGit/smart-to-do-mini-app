@@ -13,7 +13,9 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
 
     List<TaskEntity> findAllByUser_Id(Long userId);
 
-    List<TaskEntity> findAllByUser_IdAndStatus(Long userId, TaskStatus status);
+    List<TaskEntity> findAllByChatId(Long chatId);
 
-    List<TaskEntity> findAllByUser_IdAndDeadlineBetween(Long userId, LocalDateTime start, LocalDateTime end);
+    List<TaskEntity> findAllByChatIdAndStatus(Long chatId, TaskStatus status);
+
+    List<TaskEntity> findAllByChatIdAndDeadlineBetween(Long chatId, LocalDateTime start, LocalDateTime end);
 }

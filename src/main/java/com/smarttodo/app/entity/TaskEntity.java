@@ -30,6 +30,10 @@ public class TaskEntity {
     @NonNull
     private final String title;
 
+    @Column(name = "chat_id", nullable = false, length = 255)
+    @NonNull
+    private final Long chatId;
+
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
@@ -38,11 +42,11 @@ public class TaskEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
-    private TaskStatus status = TaskStatus.NEW;
+    private TaskStatus status = TaskStatus.UNCOMPLETED;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority", nullable = false, length = 32)
-    private Priority priority = Priority.MEDIUM;
+    private Priority priority = Priority.LOW;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

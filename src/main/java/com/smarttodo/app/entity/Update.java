@@ -1,6 +1,7 @@
-package com.smarttodo.app.dto;
+package com.smarttodo.app.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -53,6 +54,19 @@ public class Update {
                 && message.getBody().getText().trim().equalsIgnoreCase(cmd);
     }
 
+    public boolean isText() {
+        return isType("message_created")
+                && message != null
+                && message.getBody() != null;
+    }
+
+    public String getText() {
+        if (message != null &&  message.getBody() != null) {
+            return message.getBody().getText().trim();
+        }
+        return null;
+    }
+
     public boolean isCallback(String code) {
         return isType("message_callback")
                 && callback != null
@@ -78,6 +92,18 @@ public class Update {
                 : 0L;
     }
 
+    public long userId() {
+        // message_created: message.sender.user_id
+        if (message != null && message.getSender() != null && message.getSender().getUserId() != null) {
+            return message.getSender().getUserId();
+        }
+        // message_callback: callback.user.user_id
+        if (callback != null && callback.getUser() != null && callback.getUser().getUserId() != null) {
+            return callback.getUser().getUserId();
+        }
+        return 0L;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -100,6 +126,7 @@ public class Update {
         private MessageBody body;
         private Recipient recipient;
         private Long timestamp;
+        private Sender sender;
 
         @Override
         public String toString() {
@@ -112,6 +139,15 @@ public class Update {
                     .append(body == null ? "    null" : indent(body.toString(), 4));
             return sb.toString();
         }
+    }
+
+    @Setter
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Sender {
+
+        @JsonProperty("user_id")
+        private Long userId;
     }
 
     @Setter
@@ -147,6 +183,7 @@ public class Update {
     public static class Callback {
         private String payload;
         private Recipient recipient;
+        private Sender user;
 
         @Override
         public String toString() {

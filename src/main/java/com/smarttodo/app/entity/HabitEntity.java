@@ -22,6 +22,10 @@ public class HabitEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "chat_id", nullable = false)
+    @NonNull
+    private final Long chatId;
+
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
 
     @JoinColumn(name = "user_id", nullable = false,
@@ -37,16 +41,16 @@ public class HabitEntity {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 32)
-    private HabitStatus status = HabitStatus.ARCHIVED;
+    @Column(name = "status", length = 32)
+    private HabitStatus status = HabitStatus.IN_PROGRESS;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "interval", nullable = false, length = 32)
+    @Column(name = "interval", length = 32)
     private HabitInterval interval = HabitInterval.EVERY_DAY;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "priority", nullable = false, length = 32)
-    private Priority priority = Priority.MEDIUM;
+    @Column(name = "priority", length = 32)
+    private Priority priority = Priority.LOW;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
